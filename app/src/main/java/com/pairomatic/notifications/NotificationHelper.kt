@@ -45,12 +45,13 @@ object NotificationHelper {
         val bitmap = loadBitmap(pair.imagePath, imageDir)
 
         val builder = baseBuilder(context, importance)
-            .setContentTitle(pair.letters)                 // zwinięte: sama para = test
-            .setContentText(pair.word)
+            .setContentTitle(pair.letters)                 // zwinięte: wyłącznie para liter (to jest test)
+        // Celowo NIE ustawiamy contentText — w widoku zwiniętym ma być widoczna sama para,
+        // bez słowa (test polega na przypomnieniu sobie skojarzenia).
 
         val style = NotificationCompat.BigPictureStyle()
             .setBigContentTitle(pair.letters)
-            .setSummaryText(pair.word)                      // rozwinięte: słowo
+            .setSummaryText(pair.word)                      // rozwinięte: słowo pod obrazkiem
         if (bitmap != null) style.bigPicture(bitmap)
         builder.setStyle(style)
 

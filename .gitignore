@@ -1,0 +1,23 @@
+# Gradle / build
+.gradle/
+build/
+app/build/
+captures/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+.cxx/
+
+# Local configuration (ścieżka do SDK — u każdego inna)
+local.properties
+
+# Keystore / sekrety
+*.jks
+*.keystore
+
+# Logi i pliki systemowe
+*.log
+.DS_Store

@@ -49,7 +49,7 @@ fun StatsScreen() {
             StatRow("⚪ Jeszcze nieklinięte", state.neverGraded)
 
             Text(
-                "Kategorie mogą się przecinać (np. „nie znam" i oflagowana), więc nie sumują się do całości.",
+                "Kategorie mogą się przecinać (np. „nie znam” i oflagowana), więc nie sumują się do całości.",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp)
             )

@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Letter Pairs Trainer</string>
+
+    <!-- Powiadomienia -->
+    <string name="channel_name">Trening par liter</string>
+    <string name="channel_description">Powiadomienia z parami liter do treningu</string>
+    <string name="grade_dont_know">Nie znałem</string>
+    <string name="grade_soso">Znam w miarę</string>
+    <string name="grade_well">Znam bardzo dobrze</string>
+
+    <!-- Nawigacja -->
+    <string name="nav_pairs">Pary</string>
+    <string name="nav_stats">Statystyki</string>
+    <string name="nav_settings">Ustawienia</string>
+</resources>

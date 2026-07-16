@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Motyw okna aktywności. Kolory i typografia UI pochodzą z Compose MaterialTheme;
+         ten motyw zapewnia jedynie okno bez ActionBara. -->
+    <style name="Theme.Pairomatic" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

@@ -1,0 +1,53 @@
+name: Publikacja APK
+
+# Po każdym scaleniu do main buduje debugowy APK i publikuje go jako Release,
+# żeby dało się go zainstalować na telefonie bez komputera.
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:   # umożliwia też ręczne uruchomienie z zakładki Actions
+
+permissions:
+  contents: write       # potrzebne do utworzenia Release
+
+jobs:
+  release:
+    name: Zbuduj i opublikuj APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v4
+
+      - name: Ustaw JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Skonfiguruj Gradle (z cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Nadaj prawa wykonywania gradlew
+        run: chmod +x ./gradlew
+
+      - name: Zbuduj debugowy APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Przygotuj plik APK pod czytelną nazwą
+        run: cp app/build/outputs/apk/debug/app-debug.apk letter-pairs-trainer.apk
+
+      - name: Opublikuj Release z APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Letter Pairs Trainer — build ${{ github.run_number }}
+          body: |
+            Automatyczny build z gałęzi `main` (commit ${{ github.sha }}).
+
+            📱 **Instalacja na telefonie:** pobierz `letter-pairs-trainer.apk`,
+            otwórz go na telefonie i zezwól na instalację z nieznanych źródeł.
+
+            To wersja debugowa — do prywatnego testowania (sideload).
+          files: letter-pairs-trainer.apk
+          make_latest: true

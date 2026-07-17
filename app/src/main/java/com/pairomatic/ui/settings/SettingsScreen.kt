@@ -67,6 +67,10 @@ fun SettingsScreen() {
         ActivityResultContracts.OpenDocument()
     ) { uri -> if (uri != null) viewModel.import(uri, replaceAll) }
 
+    val importCsvLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> if (uri != null) viewModel.importCsv(uri, replaceAll) }
+
     LaunchedEffect(message) {
         message?.let {
             snackbarHost.showSnackbar(it)
@@ -185,9 +189,23 @@ fun SettingsScreen() {
             )
             ImportHelp()
             OutlinedButton(
+                onClick = {
+                    importCsvLauncher.launch(
+                        arrayOf(
+                            "text/csv",
+                            "text/comma-separated-values",
+                            "text/plain",
+                            "application/vnd.ms-excel",
+                            "application/octet-stream"
+                        )
+                    )
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Importuj z CSV") }
+            OutlinedButton(
                 onClick = { importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) },
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("Importuj z .zip") }
+            ) { Text("Importuj z .zip (z obrazkami)") }
         }
     }
 }
@@ -198,7 +216,7 @@ private fun SectionTitle(text: String) {
 }
 
 /**
- * Rozwijana pomoc opisująca format pliku importu (.zip z pairs.json + folder images/).
+ * Rozwijana pomoc opisująca format pliku CSV do importu par.
  */
 @Composable
 private fun ImportHelp() {
@@ -211,47 +229,45 @@ private fun ImportHelp() {
                 .padding(16.dp)
         ) {
             Text(
-                text = "ℹ️ Jak przygotować plik importu?" + if (expanded) "  ▲" else "  ▼",
+                text = "ℹ️ Jak przygotować plik CSV?" + if (expanded) "  ▲" else "  ▼",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold
             )
             if (expanded) {
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    "Plik importu to archiwum .zip zawierające:",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    "• pairs.json — lista par\n• images/ — folder z obrazkami (opcjonalny)",
+                    "CSV to zwykły plik tekstowy z arkusza (Excel / Google Sheets) — trzy kolumny:",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Przykład pairs.json:",
+                    "Przykład:",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = """
-                        [
-                          { "letters": "CT", "word": "Cytryna", "image": "ct.png" },
-                          { "letters": "SK", "word": "Skorpion", "image": "sk.png" }
-                        ]
+                        litery,slowo,obrazek
+                        CT,Cytryna,ct.png
+                        SK,Skorpion,sk.png
                     """.trimIndent(),
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily.Monospace
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "• letters — para liter (wymagane, unikalne)\n" +
-                        "• word — słowo-obraz\n" +
-                        "• image — nazwa pliku z folderu images/ (opcjonalne)\n" +
-                        "• level / lastSeen / hardFlag — statystyki (opcjonalne)",
+                    "• 1. kolumna — litery pary (wymagane, np. CT)\n" +
+                        "• 2. kolumna — słowo-obraz (np. Cytryna)\n" +
+                        "• 3. kolumna — nazwa pliku obrazka (opcjonalna)\n" +
+                        "• separator: przecinek lub średnik\n" +
+                        "• pierwszy wiersz nagłówka jest pomijany\n" +
+                        "• zapisz w kodowaniu UTF-8 (polskie znaki)",
                     style = MaterialTheme.typography.bodySmall
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Najprościej: wyeksportuj talię przyciskiem powyżej i użyj powstałego pliku .zip jako wzoru.",
+                    "CSV wgrywa tylko tekst. Obrazki (pliki) dodajesz osobno przy edycji pary " +
+                        "albo importem z .zip. „Import zastępuje całą bazę\" powyżej działa też dla CSV.",
                     style = MaterialTheme.typography.bodySmall,
                     fontStyle = FontStyle.Italic
                 )

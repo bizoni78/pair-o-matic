@@ -84,6 +84,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun importCsv(source: Uri, replaceAll: Boolean) {
+        viewModelScope.launch {
+            val result = runCatching { container.pairRepository.importFromCsv(source, replaceAll) }
+            _message.value = if (result.isSuccess) "Zaimportowano pary z CSV" else "Błąd importu CSV"
+        }
+    }
+
     fun consumeMessage() { _message.value = null }
 
     private fun applyImmersionScheduling(mode: LearningMode, intervalMinutes: Int, enabled: Boolean) {

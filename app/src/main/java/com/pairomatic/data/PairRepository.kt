@@ -155,4 +155,80 @@ class PairRepository(
             }
         }
     }
+
+    /**
+     * Importuje pary z pliku CSV (`litery, słowo, nazwa_pliku_obrazka`).
+     * Separator: przecinek lub średnik (wykrywany automatycznie). Wiersz nagłówka pomijany.
+     * CSV nie zawiera obrazków ani statystyk — ustawia tylko litery, słowo i (opcjonalnie) nazwę pliku.
+     *
+     * @param replaceAll true = wyczyść bazę przed importem; false = scal po kluczu `letters`
+     *                   (zachowując istniejące statystyki i obrazek, jeśli CSV go nie podaje).
+     */
+    suspend fun importFromCsv(source: Uri, replaceAll: Boolean) = withContext(Dispatchers.IO) {
+        val text = appContext.contentResolver.openInputStream(source)!!.use {
+            it.readBytes().decodeToString()
+        }
+        val rows = parseCsv(text)
+        if (rows.isEmpty()) return@withContext
+        if (replaceAll) dao.deleteAll()
+
+        for (cols in rows) {
+            val letters = cols.getOrNull(0)?.trim().orEmpty()
+            if (letters.isEmpty()) continue
+            // Pomiń wiersz nagłówka (typowe nazwy kolumn).
+            if (letters.equals("letters", ignoreCase = true) || letters.equals("litery", ignoreCase = true)) continue
+
+            val word = cols.getOrNull(1)?.trim().orEmpty()
+            val image = cols.getOrNull(2)?.trim()?.takeIf { it.isNotEmpty() }
+
+            // getByLetters również w trybie replaceAll — obsługuje duplikaty liter w samym pliku.
+            val existing = dao.getByLetters(letters)
+            if (existing == null) {
+                dao.insert(PairEntity(letters = letters, word = word, imagePath = image))
+            } else {
+                dao.update(
+                    existing.copy(
+                        word = if (word.isNotEmpty()) word else existing.word,
+                        imagePath = image ?: existing.imagePath
+                    )
+                )
+            }
+        }
+    }
+
+    /** Dzieli tekst CSV na wiersze i kolumny (świadomy cudzysłowów, separator , lub ;). */
+    private fun parseCsv(text: String): List<List<String>> {
+        val delimiter = if (text.count { it == ';' } > text.count { it == ',' }) ';' else ','
+        val result = mutableListOf<List<String>>()
+        for (raw in text.split("\n")) {
+            val line = raw.trimEnd('\r')
+            if (line.isBlank()) continue
+            result.add(splitCsvLine(line, delimiter))
+        }
+        return result
+    }
+
+    private fun splitCsvLine(line: String, delimiter: Char): List<String> {
+        val fields = mutableListOf<String>()
+        val sb = StringBuilder()
+        var inQuotes = false
+        var i = 0
+        while (i < line.length) {
+            val c = line[i]
+            when {
+                c == '"' -> {
+                    if (inQuotes && i + 1 < line.length && line[i + 1] == '"') {
+                        sb.append('"'); i++
+                    } else {
+                        inQuotes = !inQuotes
+                    }
+                }
+                c == delimiter && !inQuotes -> { fields.add(sb.toString()); sb.setLength(0) }
+                else -> sb.append(c)
+            }
+            i++
+        }
+        fields.add(sb.toString())
+        return fields
+    }
 }

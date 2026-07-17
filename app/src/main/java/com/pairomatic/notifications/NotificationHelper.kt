@@ -75,14 +75,16 @@ object NotificationHelper {
             .setContentText(pair.word)
 
         if (bitmap != null) {
-            // Miniatura widoczna od razu w widoku zwiniętym (także na ekranie blokady).
+            // Miniatura jako fallback dla Androida < 12 (tam duży obraz tylko po rozwinięciu).
             builder.setLargeIcon(bitmap)
             builder.setStyle(
                 NotificationCompat.BigPictureStyle()
                     .setBigContentTitle(pair.letters)
                     .setSummaryText(pair.word)
                     .bigPicture(bitmap)
-                    // Po rozwinięciu miniatura zamienia się w duży obraz.
+                    // Android 12+: duży obraz widoczny od razu również w widoku zwiniętym.
+                    .showBigPictureWhenCollapsed(true)
+                    // Nie dubluj miniatury po rozwinięciu.
                     .bigLargeIcon(null as Bitmap?)
             )
         }

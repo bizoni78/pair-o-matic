@@ -266,8 +266,10 @@ private fun ImportHelp() {
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "CSV wgrywa tylko tekst. Obrazki (pliki) dodajesz osobno przy edycji pary " +
-                        "albo importem z .zip. „Import zastępuje całą bazę\" powyżej działa też dla CSV.",
+                    "CSV wgrywa tylko tekst. Chcesz od razu z obrazkami? Spakuj plik .csv razem " +
+                        "z folderem images/ (z obrazkami) do jednego .zip i użyj „Importuj z .zip\". " +
+                        "Nazwy plików w images/ muszą pasować do 3. kolumny CSV. „Import zastępuje " +
+                        "całą bazę\" działa dla obu formatów.",
                     style = MaterialTheme.typography.bodySmall,
                     fontStyle = FontStyle.Italic
                 )

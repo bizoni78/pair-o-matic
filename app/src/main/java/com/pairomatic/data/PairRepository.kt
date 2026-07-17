@@ -111,7 +111,8 @@ class PairRepository(
      */
     suspend fun importFromZip(source: Uri, replaceAll: Boolean) = withContext(Dispatchers.IO) {
         var pairsJson: String? = null
-        // Krok 1: wypakuj obrazki i wczytaj metadane.
+        var pairsCsv: String? = null
+        // Krok 1: wypakuj obrazki i wczytaj metadane (pairs.json ALBO dowolny plik .csv).
         appContext.contentResolver.openInputStream(source)!!.use { raw ->
             ZipInputStream(raw).use { zip ->
                 var entry: ZipEntry? = zip.nextEntry
@@ -119,6 +120,8 @@ class PairRepository(
                     val name = entry.name
                     when {
                         name == "pairs.json" -> pairsJson = zip.readBytes().decodeToString()
+                        !entry.isDirectory && name.endsWith(".csv", ignoreCase = true) ->
+                            pairsCsv = zip.readBytes().decodeToString()
                         name.startsWith("images/") && !entry.isDirectory -> {
                             val fileName = name.removePrefix("images/")
                             if (fileName.isNotBlank()) {
@@ -131,27 +134,36 @@ class PairRepository(
                 }
             }
         }
-        val content = pairsJson ?: return@withContext
-        if (replaceAll) dao.deleteAll()
 
-        // Krok 2: zapisz pary.
-        val array = JSONArray(content)
-        for (i in 0 until array.length()) {
-            val obj = array.getJSONObject(i)
-            val letters = obj.getString("letters")
-            val incoming = PairEntity(
-                letters = letters,
-                word = obj.optString("word", ""),
-                imagePath = obj.optString("image", null)?.takeIf { it.isNotBlank() && it != "null" },
-                level = if (obj.isNull("level")) null else obj.optInt("level"),
-                lastSeen = if (obj.isNull("lastSeen")) null else obj.optLong("lastSeen"),
-                hardFlag = obj.optBoolean("hardFlag", false)
-            )
-            val existing = if (replaceAll) null else dao.getByLetters(letters)
-            if (existing == null) {
-                dao.insert(incoming)
-            } else {
-                dao.update(incoming.copy(id = existing.id))
+        // Krok 2: zapisz pary — preferuj JSON, w przeciwnym razie CSV. (kopie do val dla smart-castu)
+        val jsonContent = pairsJson
+        val csvContent = pairsCsv
+        when {
+            jsonContent != null -> {
+                if (replaceAll) dao.deleteAll()
+                val array = JSONArray(jsonContent)
+                for (i in 0 until array.length()) {
+                    val obj = array.getJSONObject(i)
+                    val letters = obj.getString("letters")
+                    val incoming = PairEntity(
+                        letters = letters,
+                        word = obj.optString("word", ""),
+                        imagePath = obj.optString("image", null)?.takeIf { it.isNotBlank() && it != "null" },
+                        level = if (obj.isNull("level")) null else obj.optInt("level"),
+                        lastSeen = if (obj.isNull("lastSeen")) null else obj.optLong("lastSeen"),
+                        hardFlag = obj.optBoolean("hardFlag", false)
+                    )
+                    val existing = dao.getByLetters(letters)
+                    if (existing == null) dao.insert(incoming)
+                    else dao.update(incoming.copy(id = existing.id))
+                }
+            }
+            csvContent != null -> {
+                val rows = parseCsv(csvContent)
+                if (rows.isNotEmpty()) {
+                    if (replaceAll) dao.deleteAll()
+                    upsertCsvRows(rows)
+                }
             }
         }
     }
@@ -171,17 +183,23 @@ class PairRepository(
         val rows = parseCsv(text)
         if (rows.isEmpty()) return@withContext
         if (replaceAll) dao.deleteAll()
+        upsertCsvRows(rows)
+    }
 
+    /**
+     * Zapisuje pary z wierszy CSV (`litery, słowo, nazwa_pliku_obrazka`). Pomija nagłówek.
+     * Nie czyści bazy — o to dba wywołujący. Zawsze sprawdza `getByLetters`, więc obsługuje
+     * duplikaty liter w samym pliku. Scalanie zachowuje istniejące słowo/obrazek, gdy pole puste.
+     */
+    private suspend fun upsertCsvRows(rows: List<List<String>>) {
         for (cols in rows) {
             val letters = cols.getOrNull(0)?.trim().orEmpty()
             if (letters.isEmpty()) continue
-            // Pomiń wiersz nagłówka (typowe nazwy kolumn).
             if (letters.equals("letters", ignoreCase = true) || letters.equals("litery", ignoreCase = true)) continue
 
             val word = cols.getOrNull(1)?.trim().orEmpty()
             val image = cols.getOrNull(2)?.trim()?.takeIf { it.isNotEmpty() }
 
-            // getByLetters również w trybie replaceAll — obsługuje duplikaty liter w samym pliku.
             val existing = dao.getByLetters(letters)
             if (existing == null) {
                 dao.insert(PairEntity(letters = letters, word = word, imagePath = image))

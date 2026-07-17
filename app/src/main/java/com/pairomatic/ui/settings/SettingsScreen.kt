@@ -3,15 +3,19 @@ package com.pairomatic.ui.settings
 import android.app.TimePickerDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -33,6 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -177,6 +183,7 @@ fun SettingsScreen() {
                 checked = replaceAll,
                 onCheckedChange = { replaceAll = it }
             )
+            ImportHelp()
             OutlinedButton(
                 onClick = { importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) },
                 modifier = Modifier.fillMaxWidth()
@@ -188,6 +195,69 @@ fun SettingsScreen() {
 @Composable
 private fun SectionTitle(text: String) {
     Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+}
+
+/**
+ * Rozwijana pomoc opisująca format pliku importu (.zip z pairs.json + folder images/).
+ */
+@Composable
+private fun ImportHelp() {
+    var expanded by remember { mutableStateOf(false) }
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "ℹ️ Jak przygotować plik importu?" + if (expanded) "  ▲" else "  ▼",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold
+            )
+            if (expanded) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    "Plik importu to archiwum .zip zawierające:",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    "• pairs.json — lista par\n• images/ — folder z obrazkami (opcjonalny)",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Przykład pairs.json:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = """
+                        [
+                          { "letters": "CT", "word": "Cytryna", "image": "ct.png" },
+                          { "letters": "SK", "word": "Skorpion", "image": "sk.png" }
+                        ]
+                    """.trimIndent(),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "• letters — para liter (wymagane, unikalne)\n" +
+                        "• word — słowo-obraz\n" +
+                        "• image — nazwa pliku z folderu images/ (opcjonalne)\n" +
+                        "• level / lastSeen / hardFlag — statystyki (opcjonalne)",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Najprościej: wyeksportuj talię przyciskiem powyżej i użyj powstałego pliku .zip jako wzoru.",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontStyle = FontStyle.Italic
+                )
+            }
+        }
+    }
 }
 
 @Composable

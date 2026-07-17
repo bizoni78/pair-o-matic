@@ -73,11 +73,19 @@ object NotificationHelper {
         val builder = baseBuilder(context, importance)
             .setContentTitle(pair.letters)
             .setContentText(pair.word)
-        val style = NotificationCompat.BigPictureStyle()
-            .setBigContentTitle(pair.letters)
-            .setSummaryText(pair.word)
-        if (bitmap != null) style.bigPicture(bitmap)
-        builder.setStyle(style)
+
+        if (bitmap != null) {
+            // Miniatura widoczna od razu w widoku zwiniętym (także na ekranie blokady).
+            builder.setLargeIcon(bitmap)
+            builder.setStyle(
+                NotificationCompat.BigPictureStyle()
+                    .setBigContentTitle(pair.letters)
+                    .setSummaryText(pair.word)
+                    .bigPicture(bitmap)
+                    // Po rozwinięciu miniatura zamienia się w duży obraz.
+                    .bigLargeIcon(null as Bitmap?)
+            )
+        }
         notify(context, builder.build())
     }
 

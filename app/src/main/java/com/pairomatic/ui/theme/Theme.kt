@@ -1,13 +1,16 @@
 package com.pairomatic.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 
 // --- Paleta marki (żywa, spójna niezależnie od tapety systemu) ---
@@ -51,6 +54,15 @@ private val DarkColors = darkColorScheme(
     onSurfaceVariant = Color(0xFFC7BFDD)
 )
 
+// Przytulne, mocno zaokrąglone kształty (pola tekstowe, karty, menu, dialogi).
+private val AppShapes = Shapes(
+    extraSmall = RoundedCornerShape(12.dp),
+    small = RoundedCornerShape(14.dp),
+    medium = RoundedCornerShape(18.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(32.dp)
+)
+
 @Composable
 fun PairomaticTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -61,6 +73,7 @@ fun PairomaticTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography(),
+        shapes = AppShapes,
         content = content
     )
 }

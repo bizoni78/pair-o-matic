@@ -7,11 +7,16 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Typeface
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.StyleSpan
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.pairomatic.R
 import com.pairomatic.data.db.PairEntity
 import com.pairomatic.data.settings.NotificationImportance
+import com.pairomatic.ui.components.pairLetterIndices
 import java.io.File
 
 /**
@@ -51,7 +56,7 @@ object NotificationHelper {
 
         val style = NotificationCompat.BigPictureStyle()
             .setBigContentTitle(pair.letters)
-            .setSummaryText(pair.word)                      // rozwinięte: słowo pod obrazkiem
+            .setSummaryText(boldedWord(pair))               // rozwinięte: słowo pod obrazkiem (litery pary pogrubione)
         if (bitmap != null) style.bigPicture(bitmap)
         builder.setStyle(style)
 
@@ -72,7 +77,7 @@ object NotificationHelper {
         val bitmap = loadBitmap(pair.imagePath, imageDir)
         val builder = baseBuilder(context, importance)
             .setContentTitle(pair.letters)
-            .setContentText(pair.word)
+            .setContentText(boldedWord(pair))
 
         if (bitmap != null) {
             // Miniatura jako fallback dla Androida < 12 (tam duży obraz tylko po rozwinięciu).
@@ -80,7 +85,7 @@ object NotificationHelper {
             builder.setStyle(
                 NotificationCompat.BigPictureStyle()
                     .setBigContentTitle(pair.letters)
-                    .setSummaryText(pair.word)
+                    .setSummaryText(boldedWord(pair))
                     .bigPicture(bitmap)
                     // Android 12+: duży obraz widoczny od razu również w widoku zwiniętym.
                     .showBigPictureWhenCollapsed(true)
@@ -113,6 +118,22 @@ object NotificationHelper {
         } catch (_: SecurityException) {
             // brak uprawnienia — ignorujemy
         }
+    }
+
+    /**
+     * Słowo pary z pogrubionymi literami pary (np. „CT" + „Cytryna" → **C**y**t**ryna).
+     * Zwraca zwykły String, jeśli słowo jest puste lub nie da się dopasować liter.
+     */
+    private fun boldedWord(pair: PairEntity): CharSequence {
+        val word = pair.word
+        if (word.isBlank()) return word
+        val indices = pairLetterIndices(word, pair.letters)
+        if (indices.isEmpty()) return word
+        val spannable = SpannableString(word)
+        for (i in indices) {
+            spannable.setSpan(StyleSpan(Typeface.BOLD), i, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        return spannable
     }
 
     private fun loadBitmap(fileName: String?, imageDir: File): Bitmap? {

@@ -33,6 +33,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
 import com.pairomatic.ui.components.AppTopBar
+import com.pairomatic.ui.components.boldPairLetters
 import com.pairomatic.ui.rememberAppContainer
 import com.pairomatic.ui.theme.BrandAmber
 import com.pairomatic.ui.theme.BrandGreen
@@ -101,9 +102,10 @@ fun LearnScreen() {
                                             )
                                         }
                                         Text(
-                                            pair.word.ifBlank { "—" },
-                                            style = MaterialTheme.typography.headlineSmall,
-                                            fontWeight = FontWeight.SemiBold
+                                            text = if (pair.word.isBlank())
+                                                androidx.compose.ui.text.AnnotatedString("—")
+                                            else boldPairLetters(pair.word, pair.letters),
+                                            style = MaterialTheme.typography.headlineSmall
                                         )
                                     } else {
                                         Text(

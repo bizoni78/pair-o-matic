@@ -34,6 +34,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
+import com.pairomatic.ui.components.AppTopBar
 import com.pairomatic.ui.rememberAppContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,8 +59,8 @@ fun PairEditScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(if (pairId == 0L) "Nowa para" else "Edycja pary") },
+            AppTopBar(
+                title = if (pairId == 0L) "Nowa para" else "Edycja pary",
                 actions = {
                     if (pairId != 0L) {
                         IconButton(onClick = viewModel::delete) {

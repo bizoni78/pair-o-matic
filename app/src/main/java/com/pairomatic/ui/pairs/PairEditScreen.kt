@@ -19,14 +19,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -69,7 +72,8 @@ fun PairEditScreen(
                     }
                 }
             )
-        }
+        },
+        containerColor = Color.Transparent
     ) { padding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
@@ -80,6 +84,11 @@ fun PairEditScreen(
                 onValueChange = viewModel::onLettersChange,
                 label = { Text("Litery (np. CT)") },
                 singleLine = true,
+                shape = RoundedCornerShape(18.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
@@ -87,6 +96,11 @@ fun PairEditScreen(
                 onValueChange = viewModel::onWordChange,
                 label = { Text("Słowo-obraz (np. Cytryna)") },
                 singleLine = true,
+                shape = RoundedCornerShape(18.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -101,6 +115,7 @@ fun PairEditScreen(
             }
             FilledTonalButton(
                 onClick = { imagePicker.launch("image/*") },
+                shape = RoundedCornerShape(18.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(if (imageFile == null) "Wybierz obrazek" else "Zmień obrazek")
@@ -120,6 +135,7 @@ fun PairEditScreen(
             Button(
                 onClick = viewModel::save,
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp, pressedElevation = 1.dp)
             ) {
                 Text("Zapisz")

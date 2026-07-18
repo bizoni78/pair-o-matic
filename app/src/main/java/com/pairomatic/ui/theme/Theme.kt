@@ -89,3 +89,10 @@ private val avatarPalette = listOf(
 
 /** Stabilny kolor „awatara" dla danej pary liter (dla wizualnej różnorodności listy). */
 fun letterColor(key: String): Color = avatarPalette[abs(key.hashCode()) % avatarPalette.size]
+
+/** Delikatny gradient tła całej aplikacji (pod ekranami). */
+fun appBackgroundGradient(darkTheme: Boolean): Brush = if (darkTheme) {
+    Brush.verticalGradient(listOf(Color(0xFF1C1330), Color(0xFF120F1C), Color(0xFF1B1020)))
+} else {
+    Brush.verticalGradient(listOf(Color(0xFFF1EAFF), Color(0xFFFBF8FF), Color(0xFFFFEEF6)))
+}

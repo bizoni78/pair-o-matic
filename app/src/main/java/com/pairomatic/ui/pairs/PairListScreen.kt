@@ -43,6 +43,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.pairomatic.data.db.PairEntity
 import com.pairomatic.ui.components.AppTopBar
+import com.pairomatic.ui.components.boldPairLetters
 import com.pairomatic.ui.rememberAppContainer
 import com.pairomatic.ui.theme.BrandAmber
 import com.pairomatic.ui.theme.BrandBlue
@@ -147,18 +148,18 @@ private fun PairRow(pair: PairEntity, onClick: () -> Unit) {
             LetterAvatar(pair.letters)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    pair.word.ifBlank { "—" },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    text = if (pair.word.isBlank()) androidx.compose.ui.text.AnnotatedString("—")
+                    else boldPairLetters(pair.word, pair.letters),
+                    style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     levelLabel(pair),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = levelColor(pair)
                 )
             }
-            if (pair.hardFlag) Text("🚩", style = MaterialTheme.typography.titleMedium)
+            if (pair.hardFlag) Text("🚩", style = MaterialTheme.typography.headlineSmall)
         }
     }
 }
@@ -168,7 +169,7 @@ private fun LetterAvatar(letters: String) {
     val base = letterColor(letters)
     Box(
         modifier = Modifier
-            .size(50.dp)
+            .size(58.dp)
             .background(
                 brush = Brush.linearGradient(listOf(base, base.copy(alpha = 0.65f))),
                 shape = RoundedCornerShape(16.dp)
@@ -178,7 +179,7 @@ private fun LetterAvatar(letters: String) {
         Text(
             letters,
             color = Color.White,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
     }

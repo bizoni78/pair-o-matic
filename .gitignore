@@ -14,9 +14,10 @@ captures/
 # Local configuration (ścieżka do SDK — u każdego inna)
 local.properties
 
-# Keystore / sekrety
+# Keystore / sekrety (poza współdzielonym kluczem debug — patrz keystore/debug.keystore)
 *.jks
 *.keystore
+!keystore/debug.keystore
 
 # Logi i pliki systemowe
 *.log

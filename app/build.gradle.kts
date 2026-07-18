@@ -19,6 +19,18 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        // Stały klucz debug (współdzielony w repo), żeby wszystkie buildy miały ten sam podpis.
+        // Dzięki temu kolejne wersje instalują się „na wierzch" bez odinstalowywania — dane zostają.
+        // To klucz DEBUG (hasło ogólnie znane) — tylko do prywatnego sideloadu, nie do Google Play.
+        getByName("debug") {
+            storeFile = rootProject.file("keystore/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false

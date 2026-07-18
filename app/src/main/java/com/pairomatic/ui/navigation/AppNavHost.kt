@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -23,18 +24,20 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
+import com.pairomatic.ui.learn.LearnScreen
 import com.pairomatic.ui.pairs.PairEditScreen
 import com.pairomatic.ui.pairs.PairListScreen
 import com.pairomatic.ui.settings.SettingsScreen
 import com.pairomatic.ui.stats.StatsScreen
 
 private sealed class TopDest(val route: String, val label: String, val icon: ImageVector) {
+    data object Learn : TopDest("learn", "Nauka", Icons.Filled.School)
     data object Pairs : TopDest("pairs", "Pary", Icons.AutoMirrored.Filled.List)
     data object Stats : TopDest("stats", "Statystyki", Icons.Filled.BarChart)
     data object Settings : TopDest("settings", "Ustawienia", Icons.Filled.Settings)
 }
 
-private val topDestinations = listOf(TopDest.Pairs, TopDest.Stats, TopDest.Settings)
+private val topDestinations = listOf(TopDest.Learn, TopDest.Pairs, TopDest.Stats, TopDest.Settings)
 
 @Composable
 fun AppNavHost() {
@@ -66,9 +69,10 @@ fun AppNavHost() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = TopDest.Pairs.route,
+            startDestination = TopDest.Learn.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable(TopDest.Learn.route) { LearnScreen() }
             composable(TopDest.Pairs.route) {
                 PairListScreen(
                     onAddPair = { navController.navigate("pairEdit/0") },

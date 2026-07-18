@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -42,8 +43,9 @@ fun AppNavHost() {
     val currentRoute = backStackEntry?.destination
 
     Scaffold(
+        containerColor = Color.Transparent,
         bottomBar = {
-            NavigationBar {
+            NavigationBar(containerColor = Color.Transparent) {
                 topDestinations.forEach { dest ->
                     val selected = currentRoute?.hierarchy?.any { it.route == dest.route } == true
                     NavigationBarItem(

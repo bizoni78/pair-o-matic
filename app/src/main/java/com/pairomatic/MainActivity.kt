@@ -7,12 +7,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.pairomatic.ui.navigation.AppNavHost
 import com.pairomatic.ui.theme.PairomaticTheme
+import com.pairomatic.ui.theme.appBackgroundGradient
 
 class MainActivity : ComponentActivity() {
 
@@ -26,9 +28,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             PairomaticTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(appBackgroundGradient(isSystemInDarkTheme()))
                 ) {
                     AppNavHost()
                 }

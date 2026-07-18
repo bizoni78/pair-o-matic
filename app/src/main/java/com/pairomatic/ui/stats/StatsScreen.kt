@@ -47,7 +47,10 @@ fun StatsScreen() {
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    Scaffold(topBar = { AppTopBar("Statystyki") }) { padding ->
+    Scaffold(
+        topBar = { AppTopBar("Statystyki") },
+        containerColor = Color.Transparent
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

@@ -1,20 +1,25 @@
 package com.pairomatic.ui.pairs
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -23,11 +28,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,9 +41,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.pairomatic.data.db.PairEntity
+import com.pairomatic.ui.components.AppTopBar
 import com.pairomatic.ui.rememberAppContainer
+import com.pairomatic.ui.theme.BrandAmber
+import com.pairomatic.ui.theme.BrandBlue
+import com.pairomatic.ui.theme.BrandGreen
+import com.pairomatic.ui.theme.BrandRed
+import com.pairomatic.ui.theme.letterColor
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PairListScreen(
     onAddPair: () -> Unit,
@@ -50,9 +61,13 @@ fun PairListScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Pary (${state.pairs.size})") }) },
+        topBar = { AppTopBar("Pary (${state.pairs.size})") },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddPair) {
+            FloatingActionButton(
+                onClick = onAddPair,
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = Color.White
+            ) {
                 Icon(Icons.Filled.Add, contentDescription = "Dodaj parę")
             }
         }
@@ -64,6 +79,7 @@ fun PairListScreen(
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 placeholder = { Text("Szukaj po literach lub słowie") },
                 singleLine = true,
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
@@ -83,8 +99,8 @@ fun PairListScreen(
             }
 
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(state.pairs, key = { it.id }) { pair ->
                     PairRow(pair, onClick = { onEditPair(pair.id) })
@@ -111,33 +127,68 @@ private fun LevelFilterChip(
 
 @Composable
 private fun PairRow(pair: PairEntity, onClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = pair.letters,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
+            LetterAvatar(pair.letters)
             Column(modifier = Modifier.weight(1f)) {
-                Text(pair.word, style = MaterialTheme.typography.bodyLarge)
-                Text(levelLabel(pair), style = MaterialTheme.typography.bodySmall)
+                Text(
+                    pair.word.ifBlank { "—" },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    levelLabel(pair),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = levelColor(pair)
+                )
             }
-            if (pair.hardFlag) Text("🚩")
+            if (pair.hardFlag) Text("🚩", style = MaterialTheme.typography.titleMedium)
         }
     }
 }
 
-private fun levelLabel(pair: PairEntity): String {
-    val level = when (pair.level) {
-        null -> "nieoceniona"
-        0 -> "nie znam"
-        1 -> "w miarę"
-        2 -> "bardzo dobrze"
-        else -> "?"
+@Composable
+private fun LetterAvatar(letters: String) {
+    val base = letterColor(letters)
+    Box(
+        modifier = Modifier
+            .size(50.dp)
+            .background(
+                brush = Brush.linearGradient(listOf(base, base.copy(alpha = 0.65f))),
+                shape = RoundedCornerShape(16.dp)
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            letters,
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
     }
-    return level
+}
+
+private fun levelLabel(pair: PairEntity): String = when (pair.level) {
+    null -> "nieoceniona"
+    0 -> "nie znam"
+    1 -> "w miarę"
+    2 -> "znam bardzo dobrze"
+    else -> "?"
+}
+
+private fun levelColor(pair: PairEntity): Color = when (pair.level) {
+    0 -> BrandRed
+    1 -> BrandAmber
+    2 -> BrandGreen
+    else -> BrandBlue
 }

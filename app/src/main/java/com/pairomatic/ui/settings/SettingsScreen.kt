@@ -15,12 +15,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -111,7 +112,11 @@ fun SettingsScreen() {
                 checked = settings.notificationsEnabled,
                 onCheckedChange = viewModel::setNotificationsEnabled
             )
-            Button(onClick = viewModel::startNow, modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = viewModel::startNow,
+                modifier = Modifier.fillMaxWidth(),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp, pressedElevation = 1.dp)
+            ) {
                 Text("Pokaż teraz pierwsze powiadomienie")
             }
 
@@ -126,7 +131,7 @@ fun SettingsScreen() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedButton(
+                FilledTonalButton(
                     onClick = {
                         pickTime(context, settings.quietStartMinute) { minute ->
                             viewModel.setQuietHours(minute, settings.quietEndMinute)
@@ -134,7 +139,7 @@ fun SettingsScreen() {
                     },
                     modifier = Modifier.weight(1f)
                 ) { Text("Od: ${formatMinute(settings.quietStartMinute)}") }
-                OutlinedButton(
+                FilledTonalButton(
                     onClick = {
                         pickTime(context, settings.quietEndMinute) { minute ->
                             viewModel.setQuietHours(settings.quietStartMinute, minute)
@@ -178,7 +183,7 @@ fun SettingsScreen() {
                 checked = includeStats,
                 onCheckedChange = { includeStats = it }
             )
-            OutlinedButton(
+            FilledTonalButton(
                 onClick = { exportLauncher.launch("pairs-export.zip") },
                 modifier = Modifier.fillMaxWidth()
             ) { Text("Eksportuj do .zip") }
@@ -189,7 +194,7 @@ fun SettingsScreen() {
                 onCheckedChange = { replaceAll = it }
             )
             ImportHelp()
-            OutlinedButton(
+            FilledTonalButton(
                 onClick = {
                     importCsvLauncher.launch(
                         arrayOf(
@@ -203,7 +208,7 @@ fun SettingsScreen() {
                 },
                 modifier = Modifier.fillMaxWidth()
             ) { Text("Importuj z CSV") }
-            OutlinedButton(
+            FilledTonalButton(
                 onClick = { importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) },
                 modifier = Modifier.fillMaxWidth()
             ) { Text("Importuj z .zip (z obrazkami)") }

@@ -8,6 +8,7 @@ import com.pairomatic.PairOMaticApp
 import com.pairomatic.data.settings.AppSettings
 import com.pairomatic.data.settings.LearningMode
 import com.pairomatic.data.settings.NotificationImportance
+import com.pairomatic.data.settings.ProgressStats
 import com.pairomatic.immersion.ImmersionWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,6 +26,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     val settings: StateFlow<AppSettings> = settingsRepo.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppSettings())
+
+    val progress: StateFlow<ProgressStats> = settingsRepo.progress
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProgressStats())
 
     fun setMode(mode: LearningMode) {
         viewModelScope.launch {
@@ -73,6 +77,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun export(target: Uri, includeStats: Boolean) {
         viewModelScope.launch {
             val result = runCatching { container.pairRepository.exportToZip(target, includeStats) }
+            if (result.isSuccess) settingsRepo.recordBackupDone()
             _message.value = if (result.isSuccess) "Wyeksportowano talię" else "Błąd eksportu"
         }
     }

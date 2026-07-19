@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pairomatic.data.PairRepository
 import com.pairomatic.data.db.PairEntity
+import com.pairomatic.data.settings.SettingsRepository
 import com.pairomatic.domain.SelectionConfig
 import com.pairomatic.domain.SelectionEngine
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +36,10 @@ data class LearnState(
  * Cooldown wyłączony (chcemy ciągłego strumienia), świeżo pokazana para jest tylko
  * wykluczana z najbliższego losowania.
  */
-class LearnViewModel(private val repository: PairRepository) : ViewModel() {
+class LearnViewModel(
+    private val repository: PairRepository,
+    private val settingsRepository: SettingsRepository
+) : ViewModel() {
 
     private val config = SelectionConfig.DEFAULT.copy(cooldownMillis = 0L)
 
@@ -77,6 +81,7 @@ class LearnViewModel(private val repository: PairRepository) : ViewModel() {
         val current = _state.value.pair ?: return
         viewModelScope.launch {
             repository.grade(current.id, level, System.currentTimeMillis())
+            settingsRepository.recordGrade()
             loadNextSuspend(excludeId = current.id)
         }
     }

@@ -49,12 +49,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pairomatic.data.settings.LearningMode
 import com.pairomatic.data.settings.NotificationImportance
 import com.pairomatic.ui.components.AppTopBar
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen() {
     val viewModel: SettingsViewModel = viewModel()
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val progress by viewModel.progress.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
     val context = LocalContext.current
@@ -74,6 +76,11 @@ fun SettingsScreen() {
     val importCsvLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri -> if (uri != null) viewModel.importCsv(uri, replaceAll) }
+
+    // Szybka kopia zapasowa — zawsze pełny ZIP ze statystykami.
+    val backupLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri -> if (uri != null) viewModel.export(uri, includeStats = true) }
 
     LaunchedEffect(message) {
         message?.let {
@@ -95,6 +102,26 @@ fun SettingsScreen() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            SectionTitle("Kopia zapasowa")
+            Text(
+                text = when (val d = progress.daysSinceBackup) {
+                    null -> "💾 Nie masz jeszcze kopii zapasowej. Zrób ją, żeby nie stracić par, obrazków i statystyk."
+                    0 -> "✅ Kopia zapasowa zrobiona dzisiaj."
+                    else -> "Ostatnia kopia: $d ${if (d == 1) "dzień" else "dni"} temu." +
+                        if (progress.backupOverdue) " Warto zrobić nową." else ""
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (progress.backupOverdue) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Button(
+                onClick = { backupLauncher.launch("pairs-backup-${LocalDate.now()}.zip") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp, pressedElevation = 1.dp)
+            ) { Text("Zrób kopię zapasową teraz (ZIP ze statystykami)") }
+
+            Divider()
             SectionTitle("Tryb nauki")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(

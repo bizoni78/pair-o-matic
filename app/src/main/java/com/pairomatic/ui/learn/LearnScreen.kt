@@ -46,7 +46,9 @@ import com.pairomatic.ui.theme.BrandRed
 fun LearnScreen() {
     val container = rememberAppContainer()
     val viewModel: LearnViewModel = viewModel(
-        factory = viewModelFactory { initializer { LearnViewModel(container.pairRepository) } }
+        factory = viewModelFactory {
+            initializer { LearnViewModel(container.pairRepository, container.settingsRepository) }
+        }
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
 

@@ -22,6 +22,7 @@ class GradeReceiver : BroadcastReceiver() {
             try {
                 if (pairId >= 0 && grade in 0..2) {
                     app.container.pairRepository.grade(pairId, grade, System.currentTimeMillis())
+                    app.container.settingsRepository.recordGrade()
                 }
                 app.container.notificationScheduler.postNextTest()
             } finally {

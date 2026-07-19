@@ -15,8 +15,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -36,6 +34,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
 import com.pairomatic.ui.components.AppTopBar
+import com.pairomatic.ui.components.BrandFilterChip
 import com.pairomatic.ui.components.boldPairLetters
 import com.pairomatic.ui.rememberAppContainer
 import com.pairomatic.ui.theme.BrandAmber
@@ -123,7 +122,6 @@ private fun CenterMessage(text: String) {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LearnControls(
     direction: LearnDirection,
@@ -137,15 +135,15 @@ private fun LearnControls(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            FilterChip(
+            BrandFilterChip(
                 selected = direction == LearnDirection.LETTERS_TO_WORD,
                 onClick = { onDirection(LearnDirection.LETTERS_TO_WORD) },
-                label = { Text("Litery → słowo") }
+                label = "Litery → słowo"
             )
-            FilterChip(
+            BrandFilterChip(
                 selected = direction == LearnDirection.WORD_TO_LETTERS,
                 onClick = { onDirection(LearnDirection.WORD_TO_LETTERS) },
-                label = { Text("Słowo → litery") }
+                label = "Słowo → litery"
             )
         }
 
@@ -168,7 +166,6 @@ private fun LearnControls(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GroupChip(
     current: LearnGroup,
@@ -176,10 +173,10 @@ private fun GroupChip(
     label: String,
     onGroup: (LearnGroup) -> Unit
 ) {
-    FilterChip(
+    BrandFilterChip(
         selected = current == value,
         onClick = { onGroup(value) },
-        label = { Text(label) }
+        label = label
     )
 }
 

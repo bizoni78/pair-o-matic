@@ -10,17 +10,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -36,6 +39,7 @@ import com.pairomatic.ui.theme.BrandAmber
 import com.pairomatic.ui.theme.BrandBlue
 import com.pairomatic.ui.theme.BrandGreen
 import com.pairomatic.ui.theme.BrandPink
+import com.pairomatic.ui.theme.BrandPurple
 import com.pairomatic.ui.theme.BrandRed
 import com.pairomatic.ui.theme.brandGradient
 
@@ -43,9 +47,12 @@ import com.pairomatic.ui.theme.brandGradient
 fun StatsScreen() {
     val container = rememberAppContainer()
     val viewModel: StatsViewModel = viewModel(
-        factory = viewModelFactory { initializer { StatsViewModel(container.pairRepository) } }
+        factory = viewModelFactory {
+            initializer { StatsViewModel(container.pairRepository, container.settingsRepository) }
+        }
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val progress by viewModel.progress.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = { AppTopBar("Statystyki") },
@@ -59,6 +66,18 @@ fun StatsScreen() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            MotivationCard(
+                streak = progress.streak,
+                today = progress.today,
+                goal = progress.dailyGoal,
+                onGoalDown = { viewModel.setDailyGoal(progress.dailyGoal - 5) },
+                onGoalUp = { viewModel.setDailyGoal(progress.dailyGoal + 5) }
+            )
+
+            if (progress.backupOverdue) {
+                BackupReminder(daysSince = progress.daysSinceBackup)
+            }
+
             MasteryHeader(total = state.total, veryWell = state.veryWell)
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
@@ -71,6 +90,10 @@ fun StatsScreen() {
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                 StatTile(Modifier.weight(1f), "⚪", "Jeszcze nieklinięte", state.neverGraded, BrandBlue)
+                StatTile(Modifier.weight(1f), "✏️", "Bez słowa", state.noWord, BrandBlue)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                StatTile(Modifier.weight(1f), "🛠️", "Do zmiany", state.review, BrandPurple)
                 Spacer(Modifier.weight(1f))
             }
 
@@ -79,6 +102,100 @@ fun StatsScreen() {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MotivationCard(
+    streak: Int,
+    today: Int,
+    goal: Int,
+    onGoalDown: () -> Unit,
+    onGoalUp: () -> Unit
+) {
+    val fraction = if (goal > 0) (today.toFloat() / goal).coerceIn(0f, 1f) else 0f
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(brandGradient())
+            .padding(20.dp)
+    ) {
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("🔥", style = MaterialTheme.typography.headlineMedium)
+                Spacer(Modifier.size(8.dp))
+                Column {
+                    Text(
+                        if (streak > 0) "Seria: $streak ${dayWord(streak)}" else "Zacznij serię dziś!",
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        "Dziś: $today / $goal ocen",
+                        color = Color.White.copy(alpha = 0.85f),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            LinearProgressIndicator(
+                progress = { fraction },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(50)),
+                color = Color.White,
+                trackColor = Color.White.copy(alpha = 0.3f),
+                gapSize = 0.dp,
+                drawStopIndicator = {}
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "Cel dzienny",
+                    color = Color.White.copy(alpha = 0.85f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                FilledTonalIconButton(onClick = onGoalDown) { Text("−", style = MaterialTheme.typography.titleLarge) }
+                Text(
+                    "  $goal  ",
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                FilledTonalIconButton(onClick = onGoalUp) { Text("+", style = MaterialTheme.typography.titleLarge) }
+            }
+        }
+    }
+}
+
+private fun dayWord(n: Int): String = if (n == 1) "dzień" else "dni"
+
+@Composable
+private fun BackupReminder(daysSince: Int?) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = BrandAmber.copy(alpha = 0.16f))
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("💾", style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.size(12.dp))
+            Text(
+                text = if (daysSince == null)
+                    "Nie masz jeszcze kopii zapasowej. Zrób ją w Ustawieniach → Kopia zapasowa, żeby nie stracić talii."
+                else
+                    "Ostatnia kopia: $daysSince ${dayWord(daysSince)} temu. Warto zrobić nową (Ustawienia → Kopia zapasowa).",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }

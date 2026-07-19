@@ -42,4 +42,24 @@ interface PairDao {
     /** Przełącza flagę „słowo do zmiany" bez naruszania pozostałych pól. */
     @Query("UPDATE pairs SET reviewFlag = :flag WHERE id = :id")
     suspend fun setReviewFlag(id: Long, flag: Boolean)
+
+    /** Przełącza flagę „nie wchodzi do głowy" bez naruszania pozostałych pól. */
+    @Query("UPDATE pairs SET hardFlag = :flag WHERE id = :id")
+    suspend fun setHardFlag(id: Long, flag: Boolean)
+
+    /** Szybka edycja samego słowa (bez naruszania statystyk i obrazka). */
+    @Query("UPDATE pairs SET word = :word WHERE id = :id")
+    suspend fun updateWord(id: Long, word: String)
+
+    /** Masowe ustawienie flagi „słowo do zmiany" dla wielu par. */
+    @Query("UPDATE pairs SET reviewFlag = :flag WHERE id IN (:ids)")
+    suspend fun setReviewFlagMany(ids: List<Long>, flag: Boolean)
+
+    /** Masowe ustawienie flagi „nie wchodzi do głowy" dla wielu par. */
+    @Query("UPDATE pairs SET hardFlag = :flag WHERE id IN (:ids)")
+    suspend fun setHardFlagMany(ids: List<Long>, flag: Boolean)
+
+    /** Masowe usunięcie par po id (obrazki kasuje repozytorium). */
+    @Query("DELETE FROM pairs WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
 }

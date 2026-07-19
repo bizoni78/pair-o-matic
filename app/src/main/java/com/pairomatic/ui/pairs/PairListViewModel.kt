@@ -10,23 +10,34 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.File
 
 /** Filtr listy par (null = wszystkie). NO_WORD = pary bez słowa, REVIEW = oznaczone „do zmiany". */
 enum class LevelFilter { ALL, NEW, DONT_KNOW, SOSO, WELL, HARD, NO_WORD, REVIEW }
 
+/** Sposób sortowania listy par. */
+enum class SortOrder { LETTERS, WEAKEST, RECENT, WORD }
+
+/** Stan trybu zaznaczania wielu par (akcje masowe). */
+data class SelectionUi(val active: Boolean = false, val ids: Set<Long> = emptySet())
+
 data class PairListState(
     val query: String = "",
     val filter: LevelFilter = LevelFilter.ALL,
-    val pairs: List<PairEntity> = emptyList()
+    val sort: SortOrder = SortOrder.LETTERS,
+    val pairs: List<PairEntity> = emptyList(),
+    val selection: SelectionUi = SelectionUi()
 )
 
 class PairListViewModel(private val repository: PairRepository) : ViewModel() {
 
     private val query = MutableStateFlow("")
     private val filter = MutableStateFlow(LevelFilter.ALL)
+    private val sort = MutableStateFlow(SortOrder.LETTERS)
+    private val selection = MutableStateFlow(SelectionUi())
 
     val state: StateFlow<PairListState> =
-        combine(repository.observeAll(), query, filter) { all, q, f ->
+        combine(repository.observeAll(), query, filter, sort, selection) { all, q, f, s, sel ->
             val filtered = all.asSequence()
                 .filter { pair ->
                     q.isBlank() ||
@@ -46,14 +57,88 @@ class PairListViewModel(private val repository: PairRepository) : ViewModel() {
                     }
                 }
                 .toList()
-            PairListState(q, f, filtered)
+            val sorted = when (s) {
+                SortOrder.LETTERS -> filtered.sortedBy { it.letters.lowercase() }
+                SortOrder.WORD -> filtered.sortedBy { it.word.lowercase() }
+                SortOrder.WEAKEST -> filtered.sortedWith(
+                    compareBy({ weaknessRank(it) }, { it.letters.lowercase() })
+                )
+                SortOrder.RECENT -> filtered.sortedByDescending { it.lastSeen ?: Long.MIN_VALUE }
+            }
+            // Zaznaczenie ograniczamy do par nadal widocznych (po zmianie filtra/wyszukiwania).
+            val visibleIds = sorted.mapTo(HashSet()) { it.id }
+            val prunedIds = sel.ids.intersect(visibleIds)
+            val prunedSel = when {
+                !sel.active -> sel
+                prunedIds.isEmpty() -> SelectionUi()
+                else -> sel.copy(ids = prunedIds)
+            }
+            PairListState(q, f, s, sorted, prunedSel)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PairListState())
+
+    /** Ranking „słabości" pary do sortowania „najsłabsze na górze". */
+    private fun weaknessRank(pair: PairEntity): Int = when {
+        pair.level == 0 -> 0          // „nie znam" — najpilniejsze
+        pair.level == null -> 1       // jeszcze nieoceniona
+        pair.level == 1 -> 2          // „w miarę"
+        else -> 3                     // „bardzo dobrze"
+    }
 
     fun onQueryChange(value: String) { query.value = value }
     fun onFilterChange(value: LevelFilter) { filter.value = value }
+    fun onSortChange(value: SortOrder) { sort.value = value }
+
+    fun imageFile(name: String?): File? = name?.let { repository.imageFile(it) }
+
+    // --- Pojedyncze akcje wiersza ---
 
     /** Przełącza flagę „słowo do zmiany" dla danej pary. */
     fun onToggleReview(pair: PairEntity) {
         viewModelScope.launch { repository.setReviewFlag(pair.id, !pair.reviewFlag) }
+    }
+
+    /** Przełącza flagę „nie wchodzi do głowy". */
+    fun onToggleHard(pair: PairEntity) {
+        viewModelScope.launch { repository.setHardFlag(pair.id, !pair.hardFlag) }
+    }
+
+    /** Szybka zmiana samego słowa (z dialogu na liście). */
+    fun onUpdateWord(id: Long, word: String) {
+        viewModelScope.launch { repository.updateWord(id, word.trim()) }
+    }
+
+    fun onDeleteOne(pair: PairEntity) {
+        viewModelScope.launch { repository.deleteMany(listOf(pair)) }
+    }
+
+    // --- Tryb zaznaczania wielu par ---
+
+    fun enterSelection(id: Long) { selection.value = SelectionUi(active = true, ids = setOf(id)) }
+
+    fun toggleSelection(id: Long) {
+        val cur = selection.value
+        val ids = if (id in cur.ids) cur.ids - id else cur.ids + id
+        selection.value = if (ids.isEmpty()) SelectionUi() else SelectionUi(active = true, ids = ids)
+    }
+
+    fun clearSelection() { selection.value = SelectionUi() }
+
+    fun bulkReview(flag: Boolean) {
+        val ids = selection.value.ids.toList()
+        viewModelScope.launch { repository.setReviewFlagMany(ids, flag) }
+        clearSelection()
+    }
+
+    fun bulkHard(flag: Boolean) {
+        val ids = selection.value.ids.toList()
+        viewModelScope.launch { repository.setHardFlagMany(ids, flag) }
+        clearSelection()
+    }
+
+    fun bulkDelete() {
+        val ids = selection.value.ids
+        val toDelete = state.value.pairs.filter { it.id in ids }
+        viewModelScope.launch { repository.deleteMany(toDelete) }
+        clearSelection()
     }
 }

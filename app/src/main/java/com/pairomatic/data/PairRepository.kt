@@ -55,6 +55,33 @@ class PairRepository(
         dao.setReviewFlag(id, flag)
     }
 
+    /** Ustawia/zdejmuje flagę „nie wchodzi do głowy" dla danej pary. */
+    suspend fun setHardFlag(id: Long, flag: Boolean) = withContext(Dispatchers.IO) {
+        dao.setHardFlag(id, flag)
+    }
+
+    /** Szybka edycja samego słowa danej pary. */
+    suspend fun updateWord(id: Long, word: String) = withContext(Dispatchers.IO) {
+        dao.updateWord(id, word)
+    }
+
+    /** Masowo ustawia flagę „słowo do zmiany" dla wielu par. */
+    suspend fun setReviewFlagMany(ids: List<Long>, flag: Boolean) = withContext(Dispatchers.IO) {
+        if (ids.isNotEmpty()) dao.setReviewFlagMany(ids, flag)
+    }
+
+    /** Masowo ustawia flagę „nie wchodzi do głowy" dla wielu par. */
+    suspend fun setHardFlagMany(ids: List<Long>, flag: Boolean) = withContext(Dispatchers.IO) {
+        if (ids.isNotEmpty()) dao.setHardFlagMany(ids, flag)
+    }
+
+    /** Masowo usuwa pary wraz z ich plikami obrazków. */
+    suspend fun deleteMany(pairs: List<PairEntity>) = withContext(Dispatchers.IO) {
+        if (pairs.isEmpty()) return@withContext
+        pairs.forEach { p -> p.imagePath?.let { File(imagesDir, it).delete() } }
+        dao.deleteByIds(pairs.map { it.id })
+    }
+
     fun imageFile(fileName: String): File = File(imagesDir, fileName)
 
     /** Kopiuje wskazany obrazek do pamięci wewnętrznej i zwraca jego nazwę pliku. */

@@ -30,7 +30,6 @@ import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -61,6 +60,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
 import com.pairomatic.data.db.PairEntity
 import com.pairomatic.ui.components.AppTopBar
+import com.pairomatic.ui.components.BrandFilterChip
 import com.pairomatic.ui.components.boldPairLetters
 import com.pairomatic.ui.rememberAppContainer
 import com.pairomatic.ui.theme.BrandAmber
@@ -269,7 +269,6 @@ private fun sortLabel(order: SortOrder): String = when (order) {
     SortOrder.RECENT -> "ostatnio widziane"
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LevelFilterChip(
     current: LevelFilter,
@@ -277,10 +276,10 @@ private fun LevelFilterChip(
     label: String,
     viewModel: PairListViewModel
 ) {
-    FilterChip(
+    BrandFilterChip(
         selected = current == value,
         onClick = { viewModel.onFilterChange(value) },
-        label = { Text(label) }
+        label = label
     )
 }
 

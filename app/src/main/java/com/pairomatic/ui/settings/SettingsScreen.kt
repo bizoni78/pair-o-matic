@@ -21,7 +21,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -49,6 +48,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pairomatic.data.settings.LearningMode
 import com.pairomatic.data.settings.NotificationImportance
 import com.pairomatic.ui.components.AppTopBar
+import com.pairomatic.ui.components.BrandFilterChip
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -124,15 +124,15 @@ fun SettingsScreen() {
             Divider()
             SectionTitle("Tryb nauki")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
+                BrandFilterChip(
                     selected = settings.mode == LearningMode.TEST,
                     onClick = { viewModel.setMode(LearningMode.TEST) },
-                    label = { Text("Test") }
+                    label = "Test"
                 )
-                FilterChip(
+                BrandFilterChip(
                     selected = settings.mode == LearningMode.IMMERSION,
                     onClick = { viewModel.setMode(LearningMode.IMMERSION) },
-                    label = { Text("Immersja") }
+                    label = "Immersja"
                 )
             }
 
@@ -186,10 +186,10 @@ fun SettingsScreen() {
             SectionTitle("Kadencja immersji")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(15, 30, 60).forEach { minutes ->
-                    FilterChip(
+                    BrandFilterChip(
                         selected = settings.immersionIntervalMinutes == minutes,
                         onClick = { viewModel.setImmersionInterval(minutes) },
-                        label = { Text("$minutes min") }
+                        label = "$minutes min"
                     )
                 }
             }
@@ -197,15 +197,15 @@ fun SettingsScreen() {
             Divider()
             SectionTitle("Poziom ważności powiadomień")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
+                BrandFilterChip(
                     selected = settings.importance == NotificationImportance.SILENT,
                     onClick = { viewModel.setImportance(NotificationImportance.SILENT) },
-                    label = { Text("Cichy") }
+                    label = "Cichy"
                 )
-                FilterChip(
+                BrandFilterChip(
                     selected = settings.importance == NotificationImportance.HEADS_UP,
                     onClick = { viewModel.setImportance(NotificationImportance.HEADS_UP) },
-                    label = { Text("Heads-up") }
+                    label = "Heads-up"
                 )
             }
 

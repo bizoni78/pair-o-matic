@@ -28,5 +28,7 @@ data class PairEntity(
     /** epoch millis ostatniej oceny/kliknięcia (nie dotyczy immersji); null = nigdy. */
     val lastSeen: Long? = null,
     /** Ręczne oznaczenie „nie wchodzi do głowy". */
-    val hardFlag: Boolean = false
+    val hardFlag: Boolean = false,
+    /** Ręczne oznaczenie „słowo do zmiany" — para, dla której szukamy lepszego słowa. */
+    val reviewFlag: Boolean = false
 )

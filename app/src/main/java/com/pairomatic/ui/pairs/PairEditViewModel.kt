@@ -18,6 +18,7 @@ data class PairEditState(
     val level: Int? = null,
     val lastSeen: Long? = null,
     val hardFlag: Boolean = false,
+    val reviewFlag: Boolean = false,
     val loading: Boolean = true,
     val error: String? = null,
     val saved: Boolean = false
@@ -48,6 +49,7 @@ class PairEditViewModel(
                         level = pair.level,
                         lastSeen = pair.lastSeen,
                         hardFlag = pair.hardFlag,
+                        reviewFlag = pair.reviewFlag,
                         loading = false
                     )
                 }
@@ -83,7 +85,8 @@ class PairEditViewModel(
                 imagePath = s.imagePath,
                 level = s.level,
                 lastSeen = s.lastSeen,
-                hardFlag = s.hardFlag
+                hardFlag = s.hardFlag,
+                reviewFlag = s.reviewFlag
             )
             val result = runCatching { repository.upsert(entity) }
             _state.value = if (result.isSuccess) {
@@ -103,7 +106,8 @@ class PairEditViewModel(
                     PairEntity(
                         id = s.id, letters = s.letters, word = s.word,
                         imagePath = s.imagePath, level = s.level,
-                        lastSeen = s.lastSeen, hardFlag = s.hardFlag
+                        lastSeen = s.lastSeen, hardFlag = s.hardFlag,
+                        reviewFlag = s.reviewFlag
                     )
                 )
             }

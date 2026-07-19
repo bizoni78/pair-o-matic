@@ -1,5 +1,6 @@
 package com.pairomatic.ui.pairs
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -20,6 +21,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -103,6 +106,8 @@ fun PairListScreen(
                 LevelFilterChip(state.filter, LevelFilter.SOSO, "W miarę", viewModel)
                 LevelFilterChip(state.filter, LevelFilter.WELL, "Dobrze", viewModel)
                 LevelFilterChip(state.filter, LevelFilter.HARD, "Trudne", viewModel)
+                LevelFilterChip(state.filter, LevelFilter.NO_WORD, "Bez słowa", viewModel)
+                LevelFilterChip(state.filter, LevelFilter.REVIEW, "Do zmiany", viewModel)
             }
 
             LazyColumn(
@@ -110,7 +115,11 @@ fun PairListScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(state.pairs, key = { it.id }) { pair ->
-                    PairRow(pair, onClick = { onEditPair(pair.id) })
+                    PairRow(
+                        pair,
+                        onClick = { onEditPair(pair.id) },
+                        onToggleReview = { viewModel.onToggleReview(pair) }
+                    )
                 }
             }
         }
@@ -133,17 +142,22 @@ private fun LevelFilterChip(
 }
 
 @Composable
-private fun PairRow(pair: PairEntity, onClick: () -> Unit) {
+private fun PairRow(pair: PairEntity, onClick: () -> Unit, onToggleReview: () -> Unit) {
+    val highlighted = pair.reviewFlag
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(
+            containerColor = if (highlighted) MaterialTheme.colorScheme.errorContainer
+            else MaterialTheme.colorScheme.surface
+        ),
+        border = if (highlighted) BorderStroke(1.5.dp, MaterialTheme.colorScheme.error) else null,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             LetterAvatar(pair.letters)
             Column(modifier = Modifier.weight(1f)) {
@@ -151,7 +165,8 @@ private fun PairRow(pair: PairEntity, onClick: () -> Unit) {
                     text = if (pair.word.isBlank()) androidx.compose.ui.text.AnnotatedString("—")
                     else boldPairLetters(pair.word, pair.letters),
                     style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = if (highlighted) MaterialTheme.colorScheme.onErrorContainer
+                    else MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     levelLabel(pair),
@@ -160,6 +175,19 @@ private fun PairRow(pair: PairEntity, onClick: () -> Unit) {
                 )
             }
             if (pair.hardFlag) Text("🚩", style = MaterialTheme.typography.headlineSmall)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Checkbox(
+                    checked = pair.reviewFlag,
+                    onCheckedChange = { onToggleReview() },
+                    colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.error)
+                )
+                Text(
+                    "do zmiany",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (highlighted) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

@@ -50,6 +50,11 @@ class PairRepository(
         dao.grade(id, level, lastSeen)
     }
 
+    /** Ustawia/zdejmuje flagę „słowo do zmiany" dla danej pary. */
+    suspend fun setReviewFlag(id: Long, flag: Boolean) = withContext(Dispatchers.IO) {
+        dao.setReviewFlag(id, flag)
+    }
+
     fun imageFile(fileName: String): File = File(imagesDir, fileName)
 
     /** Kopiuje wskazany obrazek do pamięci wewnętrznej i zwraca jego nazwę pliku. */
@@ -86,6 +91,7 @@ class PairRepository(
                         obj.put("level", p.level ?: JSONObject.NULL)
                         obj.put("lastSeen", p.lastSeen ?: JSONObject.NULL)
                         obj.put("hardFlag", p.hardFlag)
+                        obj.put("reviewFlag", p.reviewFlag)
                     }
                     json.put(obj)
                 }
@@ -151,7 +157,8 @@ class PairRepository(
                         imagePath = obj.optString("image", null)?.takeIf { it.isNotBlank() && it != "null" },
                         level = if (obj.isNull("level")) null else obj.optInt("level"),
                         lastSeen = if (obj.isNull("lastSeen")) null else obj.optLong("lastSeen"),
-                        hardFlag = obj.optBoolean("hardFlag", false)
+                        hardFlag = obj.optBoolean("hardFlag", false),
+                        reviewFlag = obj.optBoolean("reviewFlag", false)
                     )
                     val existing = dao.getByLetters(letters)
                     if (existing == null) dao.insert(incoming)

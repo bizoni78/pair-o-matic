@@ -9,9 +9,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
-/** Filtr po poziomie znajomości (null = wszystkie). */
-enum class LevelFilter { ALL, NEW, DONT_KNOW, SOSO, WELL, HARD }
+/** Filtr listy par (null = wszystkie). NO_WORD = pary bez słowa, REVIEW = oznaczone „do zmiany". */
+enum class LevelFilter { ALL, NEW, DONT_KNOW, SOSO, WELL, HARD, NO_WORD, REVIEW }
 
 data class PairListState(
     val query: String = "",
@@ -19,7 +20,7 @@ data class PairListState(
     val pairs: List<PairEntity> = emptyList()
 )
 
-class PairListViewModel(repository: PairRepository) : ViewModel() {
+class PairListViewModel(private val repository: PairRepository) : ViewModel() {
 
     private val query = MutableStateFlow("")
     private val filter = MutableStateFlow(LevelFilter.ALL)
@@ -40,6 +41,8 @@ class PairListViewModel(repository: PairRepository) : ViewModel() {
                         LevelFilter.SOSO -> pair.level == 1
                         LevelFilter.WELL -> pair.level == 2
                         LevelFilter.HARD -> pair.hardFlag
+                        LevelFilter.NO_WORD -> pair.word.isBlank()
+                        LevelFilter.REVIEW -> pair.reviewFlag
                     }
                 }
                 .toList()
@@ -48,4 +51,9 @@ class PairListViewModel(repository: PairRepository) : ViewModel() {
 
     fun onQueryChange(value: String) { query.value = value }
     fun onFilterChange(value: LevelFilter) { filter.value = value }
+
+    /** Przełącza flagę „słowo do zmiany" dla danej pary. */
+    fun onToggleReview(pair: PairEntity) {
+        viewModelScope.launch { repository.setReviewFlag(pair.id, !pair.reviewFlag) }
+    }
 }

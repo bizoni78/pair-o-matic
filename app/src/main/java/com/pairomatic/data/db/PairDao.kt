@@ -38,4 +38,8 @@ interface PairDao {
     /** Zapisuje ocenę (poziom + czas) bez naruszania pozostałych pól. */
     @Query("UPDATE pairs SET level = :level, lastSeen = :lastSeen WHERE id = :id")
     suspend fun grade(id: Long, level: Int, lastSeen: Long)
+
+    /** Przełącza flagę „słowo do zmiany" bez naruszania pozostałych pól. */
+    @Query("UPDATE pairs SET reviewFlag = :flag WHERE id = :id")
+    suspend fun setReviewFlag(id: Long, flag: Boolean)
 }

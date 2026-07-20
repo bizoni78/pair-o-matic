@@ -82,6 +82,38 @@ class PairRepository(
         dao.deleteByIds(pairs.map { it.id })
     }
 
+    /**
+     * Usuwa tylko wiersze par (BEZ kasowania plików obrazków) — na potrzeby „Cofnij".
+     * Osierocone pliki można potem posprzątać przez [deleteOrphanImages].
+     */
+    suspend fun deleteRowsOnly(pairs: List<PairEntity>) = withContext(Dispatchers.IO) {
+        if (pairs.isNotEmpty()) dao.deleteByIds(pairs.map { it.id })
+    }
+
+    /** Przywraca wcześniej usunięte pary (z zachowaniem id i ścieżek obrazków). */
+    suspend fun restorePairs(pairs: List<PairEntity>) = withContext(Dispatchers.IO) {
+        pairs.forEach { runCatching { dao.insert(it) } }
+    }
+
+    /** Liczy pliki obrazków w pamięci, do których nie odwołuje się żadna para. */
+    suspend fun countOrphanImages(): Int = withContext(Dispatchers.IO) {
+        orphanImageFiles().size
+    }
+
+    /** Usuwa osierocone pliki obrazków i zwraca ich liczbę. */
+    suspend fun deleteOrphanImages(): Int = withContext(Dispatchers.IO) {
+        val orphans = orphanImageFiles()
+        orphans.forEach { it.delete() }
+        orphans.size
+    }
+
+    /** Pliki obrazków w pamięci, do których nie odwołuje się żadna para. */
+    private suspend fun orphanImageFiles(): List<File> {
+        val used = dao.getAll().mapNotNull { it.imagePath }.toHashSet()
+        return (imagesDir.listFiles()?.toList() ?: emptyList())
+            .filter { it.isFile && it.name !in used }
+    }
+
     fun imageFile(fileName: String): File = File(imagesDir, fileName)
 
     /** Kopiuje wskazany obrazek do pamięci wewnętrznej i zwraca jego nazwę pliku. */
@@ -137,6 +169,31 @@ class PairRepository(
             }
         }
     }
+
+    /**
+     * Eksportuje pary do pliku `.csv` (`litery,slowo,obrazek`) — do edycji w arkuszu.
+     * CSV zawiera tylko tekst (bez obrazków i statystyk); spina się z importem CSV.
+     */
+    suspend fun exportToCsv(target: Uri) = withContext(Dispatchers.IO) {
+        val pairs = dao.getAll()
+        appContext.contentResolver.openOutputStream(target)!!.use { raw ->
+            raw.bufferedWriter(Charsets.UTF_8).use { w ->
+                w.append("litery,slowo,obrazek\n")
+                for (p in pairs) {
+                    w.append(csvField(p.letters)).append(',')
+                        .append(csvField(p.word)).append(',')
+                        .append(csvField(p.imagePath ?: "")).append('\n')
+                }
+            }
+        }
+    }
+
+    private fun csvField(value: String): String =
+        if (value.contains(',') || value.contains('"') || value.contains('\n') || value.contains('\r')) {
+            "\"" + value.replace("\"", "\"\"") + "\""
+        } else {
+            value
+        }
 
     /**
      * Importuje talię z pliku `.zip`.

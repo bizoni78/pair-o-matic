@@ -12,14 +12,20 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
 
-/** Filtr listy par (null = wszystkie). NO_WORD = pary bez słowa, REVIEW = oznaczone „do zmiany". */
-enum class LevelFilter { ALL, NEW, DONT_KNOW, SOSO, WELL, HARD, NO_WORD, REVIEW }
+/**
+ * Filtr listy par (null = wszystkie). NO_WORD = pary bez słowa, NO_IMAGE = pary bez obrazka,
+ * REVIEW = oznaczone „do zmiany".
+ */
+enum class LevelFilter { ALL, NEW, DONT_KNOW, SOSO, WELL, HARD, NO_WORD, NO_IMAGE, REVIEW }
 
 /** Sposób sortowania listy par. */
 enum class SortOrder { LETTERS, WEAKEST, RECENT, WORD }
 
 /** Stan trybu zaznaczania wielu par (akcje masowe). */
 data class SelectionUi(val active: Boolean = false, val ids: Set<Long> = emptySet())
+
+/** Jednorazowe zdarzenie „usunięto — można cofnąć" (do paska Snackbar). */
+data class UndoState(val id: Long = 0, val count: Int = 0)
 
 data class PairListState(
     val query: String = "",
@@ -35,6 +41,12 @@ class PairListViewModel(private val repository: PairRepository) : ViewModel() {
     private val filter = MutableStateFlow(LevelFilter.ALL)
     private val sort = MutableStateFlow(SortOrder.LETTERS)
     private val selection = MutableStateFlow(SelectionUi())
+
+    // „Cofnij": ostatnio usunięte pary (wiersze skasowane, pliki obrazków zachowane do czasu undo).
+    private val _undo = MutableStateFlow(UndoState())
+    val undo: StateFlow<UndoState> = _undo
+    private var pendingDeleted: List<PairEntity> = emptyList()
+    private var undoCounter = 0L
 
     val state: StateFlow<PairListState> =
         combine(repository.observeAll(), query, filter, sort, selection) { all, q, f, s, sel ->
@@ -53,6 +65,7 @@ class PairListViewModel(private val repository: PairRepository) : ViewModel() {
                         LevelFilter.WELL -> pair.level == 2
                         LevelFilter.HARD -> pair.hardFlag
                         LevelFilter.NO_WORD -> pair.word.isBlank()
+                        LevelFilter.NO_IMAGE -> pair.imagePath.isNullOrBlank()
                         LevelFilter.REVIEW -> pair.reviewFlag
                     }
                 }
@@ -108,7 +121,25 @@ class PairListViewModel(private val repository: PairRepository) : ViewModel() {
     }
 
     fun onDeleteOne(pair: PairEntity) {
-        viewModelScope.launch { repository.deleteMany(listOf(pair)) }
+        deleteWithUndo(listOf(pair))
+    }
+
+    /** Usuwa wiersze i wystawia zdarzenie „Cofnij"; pliki obrazków zostają do czasu undo. */
+    private fun deleteWithUndo(pairs: List<PairEntity>) {
+        if (pairs.isEmpty()) return
+        pendingDeleted = pairs
+        viewModelScope.launch { repository.deleteRowsOnly(pairs) }
+        undoCounter += 1
+        _undo.value = UndoState(id = undoCounter, count = pairs.size)
+    }
+
+    /** Przywraca ostatnio usunięte pary. */
+    fun undoDelete() {
+        val toRestore = pendingDeleted
+        pendingDeleted = emptyList()
+        if (toRestore.isNotEmpty()) {
+            viewModelScope.launch { repository.restorePairs(toRestore) }
+        }
     }
 
     // --- Tryb zaznaczania wielu par ---
@@ -138,7 +169,7 @@ class PairListViewModel(private val repository: PairRepository) : ViewModel() {
     fun bulkDelete() {
         val ids = selection.value.ids
         val toDelete = state.value.pairs.filter { it.id in ids }
-        viewModelScope.launch { repository.deleteMany(toDelete) }
         clearSelection()
+        deleteWithUndo(toDelete)
     }
 }

@@ -24,6 +24,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
+import com.pairomatic.ui.health.DeckHealthScreen
 import com.pairomatic.ui.learn.LearnScreen
 import com.pairomatic.ui.pairs.PairEditScreen
 import com.pairomatic.ui.pairs.PairListScreen
@@ -80,7 +81,12 @@ fun AppNavHost() {
                 )
             }
             composable(TopDest.Stats.route) { StatsScreen() }
-            composable(TopDest.Settings.route) { SettingsScreen() }
+            composable(TopDest.Settings.route) {
+                SettingsScreen(onOpenDeckHealth = { navController.navigate("deckHealth") })
+            }
+            composable("deckHealth") {
+                DeckHealthScreen(onBack = { navController.popBackStack() })
+            }
             composable(
                 route = "pairEdit/{pairId}",
                 arguments = listOf(navArgument("pairId") { type = NavType.LongType })

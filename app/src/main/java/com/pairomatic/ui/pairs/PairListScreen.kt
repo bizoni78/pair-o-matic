@@ -37,9 +37,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,13 +83,26 @@ fun PairListScreen(
         factory = viewModelFactory { initializer { PairListViewModel(container.pairRepository) } }
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val undo by viewModel.undo.collectAsStateWithLifecycle()
     val selectionActive = state.selection.active
 
     // Para, dla której otwarto szybką edycję słowa (null = dialog zamknięty).
     var editWordFor by remember { mutableStateOf<PairEntity?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(undo.id) {
+        if (undo.id > 0L) {
+            val result = snackbarHostState.showSnackbar(
+                message = "Usunięto ${undo.count} ${pairCountWord(undo.count)}",
+                actionLabel = "Cofnij"
+            )
+            if (result == SnackbarResult.ActionPerformed) viewModel.undoDelete()
+        }
+    }
 
     Scaffold(
         containerColor = Color.Transparent,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             if (selectionActive) {
                 SelectionTopBar(
@@ -143,6 +160,7 @@ fun PairListScreen(
                     LevelFilterChip(state.filter, LevelFilter.WELL, "Dobrze", viewModel)
                     LevelFilterChip(state.filter, LevelFilter.HARD, "Trudne", viewModel)
                     LevelFilterChip(state.filter, LevelFilter.NO_WORD, "Bez słowa", viewModel)
+                    LevelFilterChip(state.filter, LevelFilter.NO_IMAGE, "Bez obrazka", viewModel)
                     LevelFilterChip(state.filter, LevelFilter.REVIEW, "Do zmiany", viewModel)
                 }
 
@@ -443,6 +461,17 @@ private fun LetterAvatar(letters: String) {
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
+    }
+}
+
+/** Polska odmiana: 1 para, 2–4 pary, 5+ par (z wyjątkiem 12–14). */
+private fun pairCountWord(n: Int): String {
+    val lastTwo = n % 100
+    val last = n % 10
+    return when {
+        n == 1 -> "parę"
+        last in 2..4 && lastTwo !in 12..14 -> "pary"
+        else -> "par"
     }
 }
 

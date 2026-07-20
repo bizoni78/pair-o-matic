@@ -15,11 +15,14 @@ import kotlinx.coroutines.launch
 class DismissReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        val dismissedId = intent.getLongExtra(NotificationHelper.EXTRA_PAIR_ID, -1L)
         val app = context.applicationContext as PairOMaticApp
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                app.container.notificationScheduler.postNextTest()
+                app.container.notificationScheduler.postNextTest(
+                    excludeId = dismissedId.takeIf { it >= 0 }
+                )
             } finally {
                 pending.finish()
             }

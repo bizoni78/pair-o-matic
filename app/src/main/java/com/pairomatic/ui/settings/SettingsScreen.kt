@@ -236,17 +236,23 @@ fun SettingsScreen(onOpenDeckHealth: () -> Unit = {}) {
             }
 
             Divider()
-            SectionTitle("Poziom ważności powiadomień")
+            SectionTitle("Dźwięk powiadomień")
+            Text(
+                "„Bez dźwięku” — powiadomienia pojawiają się cicho (bez dźwięku i wibracji). " +
+                    "„Z dźwiękiem” — dźwięk i wyskakujące (heads-up).",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 BrandFilterChip(
                     selected = settings.importance == NotificationImportance.SILENT,
                     onClick = { viewModel.setImportance(NotificationImportance.SILENT) },
-                    label = "Cichy"
+                    label = "Bez dźwięku"
                 )
                 BrandFilterChip(
                     selected = settings.importance == NotificationImportance.HEADS_UP,
                     onClick = { viewModel.setImportance(NotificationImportance.HEADS_UP) },
-                    label = "Heads-up"
+                    label = "Z dźwiękiem"
                 )
             }
 

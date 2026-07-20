@@ -104,7 +104,9 @@ object NotificationHelper {
         NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setAutoCancel(false)
-            .setOnlyAlertOnce(importance == NotificationImportance.SILENT)
+            // setSilent(true) wycisza dźwięk i wibracje NIEZALEŻNIE od kanału (kanał jest HIGH,
+            // więc bez tego „Cichy" i tak by dzwonił na Androidzie 8+). To realny przełącznik dźwięku.
+            .setSilent(importance == NotificationImportance.SILENT)
             .setPriority(
                 if (importance == NotificationImportance.HEADS_UP) NotificationCompat.PRIORITY_HIGH
                 else NotificationCompat.PRIORITY_LOW

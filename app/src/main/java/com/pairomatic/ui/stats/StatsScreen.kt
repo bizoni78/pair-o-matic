@@ -94,7 +94,7 @@ fun StatsScreen() {
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                 StatTile(Modifier.weight(1f), "🛠️", "Do zmiany", state.review, BrandPurple)
-                Spacer(Modifier.weight(1f))
+                StatTile(Modifier.weight(1f), "🖼️", "Bez obrazka", state.noImage, BrandBlue)
             }
 
             Text(

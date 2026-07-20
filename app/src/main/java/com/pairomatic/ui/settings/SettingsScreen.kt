@@ -53,7 +53,7 @@ import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(onOpenDeckHealth: () -> Unit = {}) {
     val viewModel: SettingsViewModel = viewModel()
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val progress by viewModel.progress.collectAsStateWithLifecycle()
@@ -81,6 +81,10 @@ fun SettingsScreen() {
     val backupLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/zip")
     ) { uri -> if (uri != null) viewModel.export(uri, includeStats = true) }
+
+    val exportCsvLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri -> if (uri != null) viewModel.exportCsv(uri) }
 
     LaunchedEffect(message) {
         message?.let {
@@ -120,6 +124,14 @@ fun SettingsScreen() {
                 shape = RoundedCornerShape(18.dp),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp, pressedElevation = 1.dp)
             ) { Text("Zrób kopię zapasową teraz (ZIP ze statystykami)") }
+
+            Divider()
+            SectionTitle("Porządek w talii")
+            FilledTonalButton(
+                shape = RoundedCornerShape(18.dp),
+                onClick = onOpenDeckHealth,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Zdrowie talii (duplikaty, braki, sprzątanie)") }
 
             Divider()
             SectionTitle("Tryb nauki")
@@ -221,6 +233,11 @@ fun SettingsScreen() {
                 onClick = { exportLauncher.launch("pairs-export.zip") },
                 modifier = Modifier.fillMaxWidth()
             ) { Text("Eksportuj do .zip") }
+            FilledTonalButton(
+                shape = RoundedCornerShape(18.dp),
+                onClick = { exportCsvLauncher.launch("pairs-export.csv") },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Eksportuj do CSV (do arkusza)") }
 
             SwitchRow(
                 label = "Import zastępuje całą bazę",

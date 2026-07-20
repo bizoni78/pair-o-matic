@@ -82,6 +82,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun exportCsv(target: Uri) {
+        viewModelScope.launch {
+            val result = runCatching { container.pairRepository.exportToCsv(target) }
+            _message.value = if (result.isSuccess) "Wyeksportowano CSV" else "Błąd eksportu CSV"
+        }
+    }
+
     fun import(source: Uri, replaceAll: Boolean) {
         viewModelScope.launch {
             val result = runCatching { container.pairRepository.importFromZip(source, replaceAll) }

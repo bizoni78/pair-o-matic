@@ -19,6 +19,7 @@ data class StatsState(
     val hard: Int = 0,
     val neverGraded: Int = 0,
     val noWord: Int = 0,
+    val noImage: Int = 0,
     val review: Int = 0
 )
 
@@ -37,6 +38,7 @@ class StatsViewModel(
                 hard = pairs.count { it.hardFlag },
                 neverGraded = pairs.count { it.level == null },
                 noWord = pairs.count { it.word.isBlank() },
+                noImage = pairs.count { it.imagePath.isNullOrBlank() },
                 review = pairs.count { it.reviewFlag }
             )
         }

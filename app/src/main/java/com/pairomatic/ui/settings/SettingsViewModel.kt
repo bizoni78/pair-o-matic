@@ -9,6 +9,7 @@ import com.pairomatic.data.settings.AppSettings
 import com.pairomatic.data.settings.LearningMode
 import com.pairomatic.data.settings.NotificationImportance
 import com.pairomatic.data.settings.ProgressStats
+import com.pairomatic.data.settings.ThemeMode
 import com.pairomatic.immersion.ImmersionWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -64,6 +65,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setImportance(importance: NotificationImportance) {
         viewModelScope.launch { settingsRepo.setImportance(importance) }
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { settingsRepo.setThemeMode(mode) }
+    }
+
+    /** Ponownie pokazuje ekran onboardingu (uprawnienia + bateria). */
+    fun reopenOnboarding() {
+        viewModelScope.launch { settingsRepo.setOnboardingDone(false) }
     }
 
     /** Ręczne uruchomienie pierwszego powiadomienia bieżącego trybu. */

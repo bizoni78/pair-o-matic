@@ -19,6 +19,9 @@ enum class LearningMode { TEST, IMMERSION }
 /** Poziom ważności powiadomień (mapowany na importance kanału / priorytet). */
 enum class NotificationImportance { SILENT, HEADS_UP }
 
+/** Motyw aplikacji: zgodny z systemem, wymuszony jasny lub wymuszony ciemny. */
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
 /**
  * Migawka ustawień aplikacji.
  *
@@ -32,7 +35,9 @@ data class AppSettings(
     val quietStartMinute: Int = 22 * 60,
     val quietEndMinute: Int = 7 * 60,
     val immersionIntervalMinutes: Int = 15,
-    val importance: NotificationImportance = NotificationImportance.HEADS_UP
+    val importance: NotificationImportance = NotificationImportance.HEADS_UP,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val onboardingDone: Boolean = false
 )
 
 /**
@@ -67,6 +72,8 @@ class SettingsRepository(context: Context) {
         val QUIET_END = intPreferencesKey("quiet_end")
         val IMMERSION_INTERVAL = intPreferencesKey("immersion_interval")
         val IMPORTANCE = stringPreferencesKey("importance")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
+        val ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")
         val STREAK_COUNT = intPreferencesKey("streak_count")
         val STREAK_LAST_DAY = longPreferencesKey("streak_last_day")
         val TODAY_COUNT = intPreferencesKey("today_count")
@@ -86,7 +93,11 @@ class SettingsRepository(context: Context) {
             immersionIntervalMinutes = p[Keys.IMMERSION_INTERVAL] ?: 15,
             importance = p[Keys.IMPORTANCE]?.let {
                 runCatching { NotificationImportance.valueOf(it) }.getOrNull()
-            } ?: NotificationImportance.HEADS_UP
+            } ?: NotificationImportance.HEADS_UP,
+            themeMode = p[Keys.THEME_MODE]?.let {
+                runCatching { ThemeMode.valueOf(it) }.getOrNull()
+            } ?: ThemeMode.SYSTEM,
+            onboardingDone = p[Keys.ONBOARDING_DONE] ?: false
         )
     }
 
@@ -108,6 +119,12 @@ class SettingsRepository(context: Context) {
 
     suspend fun setImportance(importance: NotificationImportance) =
         store.edit { it[Keys.IMPORTANCE] = importance.name }
+
+    suspend fun setThemeMode(mode: ThemeMode) =
+        store.edit { it[Keys.THEME_MODE] = mode.name }
+
+    suspend fun setOnboardingDone(done: Boolean) =
+        store.edit { it[Keys.ONBOARDING_DONE] = done }
 
     // --- Postęp / motywacja / kopia zapasowa ---
 

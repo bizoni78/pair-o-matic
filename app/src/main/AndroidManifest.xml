@@ -3,6 +3,8 @@
 
     <!-- Android 13+ wymaga runtime permission na powiadomienia -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Prośba o wyłączenie optymalizacji baterii (sideload — bez ograniczeń Google Play) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
         android:name=".PairOMaticApp"

@@ -2,6 +2,7 @@ package com.pairomatic.notifications
 
 import android.content.Context
 import com.pairomatic.data.PairRepository
+import com.pairomatic.data.db.PairEntity
 import com.pairomatic.data.settings.AppSettings
 import com.pairomatic.data.settings.LearningMode
 import com.pairomatic.data.settings.SettingsRepository
@@ -19,16 +20,27 @@ class NotificationScheduler(
     private val pairRepository: PairRepository,
     private val settingsRepository: SettingsRepository
 ) {
-    /** Pokazuje kolejną parę w trybie testu (po ocenie lub odrzuceniu). */
-    suspend fun postNextTest() {
+    /**
+     * Pokazuje kolejną parę w trybie testu (po ocenie lub odrzuceniu).
+     * @param excludeId para do pominięcia w najbliższym losowaniu (np. właśnie odrzucona przez swipe),
+     *   żeby nie pokazać od razu tej samej.
+     */
+    suspend fun postNextTest(excludeId: Long? = null) {
         val settings = settingsRepository.settings.first()
         if (!canPost(settings)) {
             NotificationHelper.cancel(context)
             return
         }
         val pairs = pairRepository.getAllPairs()
-        val next = SelectionEngine.pickNext(pairs, System.currentTimeMillis(), SelectionConfig.DEFAULT)
-            ?: return
+        if (pairs.isEmpty()) {
+            NotificationHelper.cancel(context)
+            return
+        }
+        // WAŻNE: nigdy nie urywamy łańcucha. Jeśli cooldown wyzeruje całą pulę (mała talia,
+        // wszystko świeżo ocenione), dobieramy parę mimo wszystko (bez cooldownu) — inaczej
+        // po swipe/ocenie kolejne powiadomienie nie pojawiłoby się aż do wygaśnięcia cooldownu.
+        val exclude = excludeId?.let { setOf(it) } ?: emptySet()
+        val next = pickWithFallback(pairs, exclude = exclude)
         NotificationHelper.showTest(
             context, next, pairRepository.imagesDirectory, settings.importance
         )
@@ -42,13 +54,26 @@ class NotificationScheduler(
             return
         }
         val pairs = pairRepository.getAllPairs()
-        val next = SelectionEngine.pickNext(
-            pairs, System.currentTimeMillis(), SelectionConfig.DEFAULT, exclude = recentImmersion
-        ) ?: return
+        if (pairs.isEmpty()) {
+            NotificationHelper.cancel(context)
+            return
+        }
+        val next = pickWithFallback(pairs, exclude = recentImmersion)
         rememberImmersion(next.id)
         NotificationHelper.showImmersion(
             context, next, pairRepository.imagesDirectory, settings.importance
         )
+    }
+
+    /**
+     * Dobiera parę, gwarantując wynik dla niepustej talii: najpierw normalnie (z cooldownem),
+     * potem — jeśli cała pula jest w cooldownie — bez cooldownu, a w ostateczności losowo.
+     */
+    private fun pickWithFallback(pairs: List<PairEntity>, exclude: Set<Long>): PairEntity {
+        val now = System.currentTimeMillis()
+        return SelectionEngine.pickNext(pairs, now, SelectionConfig.DEFAULT, exclude)
+            ?: SelectionEngine.pickNext(pairs, now, NO_COOLDOWN, exclude)
+            ?: pairs.random()
     }
 
     /** Uruchamia pierwszą parę zależnie od aktywnego trybu (np. z ekranu ustawień). */
@@ -82,5 +107,7 @@ class NotificationScheduler(
         private const val RECENT_CAP = 10
         // Ulotna lista „ostatnio pokazanych" w immersji — celowo tylko w pamięci.
         private val recentImmersion = LinkedHashSet<Long>()
+        // Konfiguracja awaryjna: ten sam dobór, ale bez cooldownu (fallback dla łańcucha).
+        private val NO_COOLDOWN = SelectionConfig.DEFAULT.copy(cooldownMillis = 0L)
     }
 }

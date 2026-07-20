@@ -64,8 +64,8 @@ object NotificationHelper {
         builder.addAction(0, context.getString(R.string.grade_soso), gradeIntent(context, pair.id, 1))
         builder.addAction(0, context.getString(R.string.grade_well), gradeIntent(context, pair.id, 2))
 
-        // Swipe → DismissReceiver pokazuje kolejną parę.
-        builder.setDeleteIntent(dismissIntent(context))
+        // Swipe → DismissReceiver pokazuje kolejną parę (z pominięciem tej właśnie odrzuconej).
+        builder.setDeleteIntent(dismissIntent(context, pair.id))
 
         notify(context, builder.build())
     }
@@ -156,8 +156,11 @@ object NotificationHelper {
         )
     }
 
-    private fun dismissIntent(context: Context): PendingIntent {
-        val intent = Intent(context, DismissReceiver::class.java)
+    private fun dismissIntent(context: Context, pairId: Long): PendingIntent {
+        val intent = Intent(context, DismissReceiver::class.java).apply {
+            putExtra(EXTRA_PAIR_ID, pairId)
+        }
+        // FLAG_UPDATE_CURRENT odświeża EXTRA_PAIR_ID przy każdym kolejnym powiadomieniu.
         return PendingIntent.getBroadcast(
             context, 0, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE

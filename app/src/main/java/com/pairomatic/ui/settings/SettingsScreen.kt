@@ -47,6 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pairomatic.data.settings.LearningMode
 import com.pairomatic.data.settings.NotificationImportance
+import com.pairomatic.data.settings.ThemeMode
 import com.pairomatic.ui.components.AppTopBar
 import com.pairomatic.ui.components.BrandFilterChip
 import java.time.LocalDate
@@ -124,6 +125,34 @@ fun SettingsScreen(onOpenDeckHealth: () -> Unit = {}) {
                 shape = RoundedCornerShape(18.dp),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp, pressedElevation = 1.dp)
             ) { Text("Zrób kopię zapasową teraz (ZIP ze statystykami)") }
+
+            Divider()
+            SectionTitle("Wygląd")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                BrandFilterChip(
+                    selected = settings.themeMode == ThemeMode.SYSTEM,
+                    onClick = { viewModel.setThemeMode(ThemeMode.SYSTEM) },
+                    label = "Systemowy"
+                )
+                BrandFilterChip(
+                    selected = settings.themeMode == ThemeMode.LIGHT,
+                    onClick = { viewModel.setThemeMode(ThemeMode.LIGHT) },
+                    label = "Jasny"
+                )
+                BrandFilterChip(
+                    selected = settings.themeMode == ThemeMode.DARK,
+                    onClick = { viewModel.setThemeMode(ThemeMode.DARK) },
+                    label = "Ciemny"
+                )
+            }
+
+            Divider()
+            SectionTitle("Niezawodność powiadomień")
+            FilledTonalButton(
+                shape = RoundedCornerShape(18.dp),
+                onClick = viewModel::reopenOnboarding,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Uprawnienia i optymalizacja baterii") }
 
             Divider()
             SectionTitle("Porządek w talii")

@@ -14,6 +14,9 @@
     <string name="reminder_title">Czas na naukę! 🔥</string>
     <string name="reminder_text">Nie przerywaj serii — poćwicz kilka par.</string>
 
+    <!-- Widget -->
+    <string name="widget_label">Letter Pairs — nauka</string>
+
     <!-- Nawigacja -->
     <string name="nav_pairs">Pary</string>
     <string name="nav_stats">Statystyki</string>

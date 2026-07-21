@@ -28,6 +28,19 @@
 
         <!-- Odbiorniki akcji powiadomień trybu testu.
              exported=false: uruchamiane wyłącznie przez PendingIntent tej aplikacji. -->
+        <!-- Widget na ekran główny: seria dni, dziś/cel i przycisk „Ucz się". -->
+        <receiver
+            android:name=".widget.LearnWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/learn_widget_info" />
+        </receiver>
+
         <receiver
             android:name=".notifications.GradeReceiver"
             android:exported="false" />

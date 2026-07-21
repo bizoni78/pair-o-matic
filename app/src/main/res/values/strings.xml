@@ -8,6 +8,12 @@
     <string name="grade_soso">Znam w miarę</string>
     <string name="grade_well">Znam bardzo dobrze</string>
 
+    <!-- Przypomnienie o nauce -->
+    <string name="reminder_channel_name">Przypomnienia o nauce</string>
+    <string name="reminder_channel_description">Codzienne przypomnienie, żeby poćwiczyć</string>
+    <string name="reminder_title">Czas na naukę! 🔥</string>
+    <string name="reminder_text">Nie przerywaj serii — poćwicz kilka par.</string>
+
     <!-- Nawigacja -->
     <string name="nav_pairs">Pary</string>
     <string name="nav_stats">Statystyki</string>

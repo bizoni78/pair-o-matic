@@ -37,7 +37,9 @@ data class AppSettings(
     val immersionIntervalMinutes: Int = 15,
     val importance: NotificationImportance = NotificationImportance.HEADS_UP,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val onboardingDone: Boolean = false
+    val onboardingDone: Boolean = false,
+    val reminderEnabled: Boolean = false,
+    val reminderMinuteOfDay: Int = 18 * 60
 )
 
 /**
@@ -74,6 +76,8 @@ class SettingsRepository(context: Context) {
         val IMPORTANCE = stringPreferencesKey("importance")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")
+        val REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")
+        val REMINDER_MINUTE = intPreferencesKey("reminder_minute")
         val STREAK_COUNT = intPreferencesKey("streak_count")
         val STREAK_LAST_DAY = longPreferencesKey("streak_last_day")
         val TODAY_COUNT = intPreferencesKey("today_count")
@@ -97,7 +101,9 @@ class SettingsRepository(context: Context) {
             themeMode = p[Keys.THEME_MODE]?.let {
                 runCatching { ThemeMode.valueOf(it) }.getOrNull()
             } ?: ThemeMode.SYSTEM,
-            onboardingDone = p[Keys.ONBOARDING_DONE] ?: false
+            onboardingDone = p[Keys.ONBOARDING_DONE] ?: false,
+            reminderEnabled = p[Keys.REMINDER_ENABLED] ?: false,
+            reminderMinuteOfDay = p[Keys.REMINDER_MINUTE] ?: (18 * 60)
         )
     }
 
@@ -125,6 +131,12 @@ class SettingsRepository(context: Context) {
 
     suspend fun setOnboardingDone(done: Boolean) =
         store.edit { it[Keys.ONBOARDING_DONE] = done }
+
+    suspend fun setReminderEnabled(enabled: Boolean) =
+        store.edit { it[Keys.REMINDER_ENABLED] = enabled }
+
+    suspend fun setReminderTime(minuteOfDay: Int) =
+        store.edit { it[Keys.REMINDER_MINUTE] = minuteOfDay }
 
     // --- Postęp / motywacja / kopia zapasowa ---
 

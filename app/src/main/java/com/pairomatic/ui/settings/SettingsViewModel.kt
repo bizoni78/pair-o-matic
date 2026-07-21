@@ -11,6 +11,7 @@ import com.pairomatic.data.settings.NotificationImportance
 import com.pairomatic.data.settings.ProgressStats
 import com.pairomatic.data.settings.ThemeMode
 import com.pairomatic.immersion.ImmersionWorker
+import com.pairomatic.reminder.ReminderWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -74,6 +75,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /** Ponownie pokazuje ekran onboardingu (uprawnienia + bateria). */
     fun reopenOnboarding() {
         viewModelScope.launch { settingsRepo.setOnboardingDone(false) }
+    }
+
+    fun setReminderEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepo.setReminderEnabled(enabled)
+            val context = getApplication<Application>()
+            if (enabled) ReminderWorker.schedule(context, settings.value.reminderMinuteOfDay)
+            else ReminderWorker.cancel(context)
+        }
+    }
+
+    fun setReminderTime(minuteOfDay: Int) {
+        viewModelScope.launch {
+            settingsRepo.setReminderTime(minuteOfDay)
+            if (settings.value.reminderEnabled) {
+                ReminderWorker.schedule(getApplication(), minuteOfDay)
+            }
+        }
     }
 
     /** Ręczne uruchomienie pierwszego powiadomienia bieżącego trybu. */

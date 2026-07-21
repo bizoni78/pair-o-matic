@@ -16,6 +16,7 @@
 
     <!-- Widget -->
     <string name="widget_label">Letter Pairs — nauka</string>
+    <string name="widget_pair_label">Letter Pairs — para</string>
 
     <!-- Nawigacja -->
     <string name="nav_pairs">Pary</string>

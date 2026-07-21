@@ -41,6 +41,19 @@
                 android:resource="@xml/learn_widget_info" />
         </receiver>
 
+        <!-- Mały widget: para liter + słowo obok; tap = kolejna para. -->
+        <receiver
+            android:name=".widget.PairWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_pair_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/pair_widget_info" />
+        </receiver>
+
         <receiver
             android:name=".notifications.GradeReceiver"
             android:exported="false" />

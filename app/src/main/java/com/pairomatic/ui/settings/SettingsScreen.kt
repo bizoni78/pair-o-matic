@@ -257,6 +257,30 @@ fun SettingsScreen(onOpenDeckHealth: () -> Unit = {}) {
             }
 
             Divider()
+            SectionTitle("Przypomnienie o nauce")
+            SwitchRow(
+                label = "Codzienne przypomnienie",
+                checked = settings.reminderEnabled,
+                onCheckedChange = viewModel::setReminderEnabled
+            )
+            if (settings.reminderEnabled) {
+                Text(
+                    "Jeśli o tej porze nie było dziś jeszcze żadnej oceny, dostaniesz delikatne przypomnienie.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                FilledTonalButton(
+                    shape = RoundedCornerShape(18.dp),
+                    onClick = {
+                        pickTime(context, settings.reminderMinuteOfDay) { minute ->
+                            viewModel.setReminderTime(minute)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Godzina: ${formatMinute(settings.reminderMinuteOfDay)}") }
+            }
+
+            Divider()
             SectionTitle("Import / eksport")
             SwitchRow(
                 label = "Eksportuj ze statystykami",

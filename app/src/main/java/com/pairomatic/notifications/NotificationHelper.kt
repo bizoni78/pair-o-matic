@@ -26,12 +26,15 @@ import java.io.File
 object NotificationHelper {
 
     const val CHANNEL_ID = "letter_pairs"
+    const val REMINDER_CHANNEL_ID = "letter_pairs_reminder"
     const val NOTIFICATION_ID = 1001
+    const val REMINDER_NOTIFICATION_ID = 2001
 
     const val EXTRA_PAIR_ID = "extra_pair_id"
     const val EXTRA_GRADE = "extra_grade"
 
     fun createChannel(context: Context) {
+        val manager = context.getSystemService(NotificationManager::class.java)
         val channel = NotificationChannel(
             CHANNEL_ID,
             context.getString(R.string.channel_name),
@@ -39,8 +42,38 @@ object NotificationHelper {
         ).apply {
             description = context.getString(R.string.channel_description)
         }
-        context.getSystemService(NotificationManager::class.java)
-            .createNotificationChannel(channel)
+        val reminderChannel = NotificationChannel(
+            REMINDER_CHANNEL_ID,
+            context.getString(R.string.reminder_channel_name),
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = context.getString(R.string.reminder_channel_description)
+        }
+        manager.createNotificationChannel(channel)
+        manager.createNotificationChannel(reminderChannel)
+    }
+
+    /** Delikatne przypomnienie o nauce (osobny kanał, tap otwiera aplikację). */
+    fun showReminder(context: Context) {
+        val tapIntent = Intent(context, com.pairomatic.MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pending = PendingIntent.getActivity(
+            context, 0, tapIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(context.getString(R.string.reminder_title))
+            .setContentText(context.getString(R.string.reminder_text))
+            .setAutoCancel(true)
+            .setContentIntent(pending)
+            .build()
+        try {
+            NotificationManagerCompat.from(context).notify(REMINDER_NOTIFICATION_ID, notification)
+        } catch (_: SecurityException) {
+            // brak uprawnienia — ignorujemy
+        }
     }
 
     /**

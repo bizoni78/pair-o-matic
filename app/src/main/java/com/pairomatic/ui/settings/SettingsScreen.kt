@@ -1,6 +1,9 @@
 package com.pairomatic.ui.settings
 
+import android.Manifest
 import android.app.TimePickerDialog
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -18,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -43,6 +47,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pairomatic.data.settings.LearningMode
@@ -65,6 +70,18 @@ fun SettingsScreen(onOpenDeckHealth: () -> Unit = {}) {
     // Eksport: przechowujemy wybór „ze statystykami" do momentu wskazania pliku.
     var includeStats by remember { mutableStateOf(true) }
     var replaceAll by remember { mutableStateOf(false) }
+
+    // POST_NOTIFICATIONS (Android 13+): bez tego powiadomienia nie docierają mimo włączonego przełącznika.
+    fun hasNotificationsPermission(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(
+                context, Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+    var notifPermGranted by remember { mutableStateOf(hasNotificationsPermission()) }
+    val notifPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> notifPermGranted = granted }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/zip")
@@ -183,6 +200,39 @@ fun SettingsScreen(onOpenDeckHealth: () -> Unit = {}) {
                 checked = settings.notificationsEnabled,
                 onCheckedChange = viewModel::setNotificationsEnabled
             )
+            if (settings.notificationsEnabled && !notifPermGranted) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            "⚠️ Brak uprawnienia do powiadomień",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Powiadomienia są włączone, ale system ich nie przepuści, dopóki nie " +
+                                "przyznasz aplikacji uprawnienia. To główny kanał nauki.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Button(
+                            onClick = {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    notifPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            },
+                            shape = RoundedCornerShape(18.dp)
+                        ) { Text("Przyznaj uprawnienie") }
+                    }
+                }
+            }
             Button(
                 onClick = viewModel::startNow,
                 modifier = Modifier.fillMaxWidth(),

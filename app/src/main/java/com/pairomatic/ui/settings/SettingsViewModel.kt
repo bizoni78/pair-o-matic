@@ -10,6 +10,7 @@ import com.pairomatic.data.settings.LearningMode
 import com.pairomatic.data.settings.NotificationImportance
 import com.pairomatic.data.settings.ProgressStats
 import com.pairomatic.data.settings.ThemeMode
+import androidx.work.ExistingPeriodicWorkPolicy
 import com.pairomatic.immersion.ImmersionWorker
 import com.pairomatic.reminder.ReminderWorker
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -81,7 +82,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             settingsRepo.setReminderEnabled(enabled)
             val context = getApplication<Application>()
-            if (enabled) ReminderWorker.schedule(context, settings.value.reminderMinuteOfDay)
+            if (enabled) ReminderWorker.schedule(
+                context,
+                settings.value.reminderMinuteOfDay,
+                ExistingPeriodicWorkPolicy.UPDATE
+            )
             else ReminderWorker.cancel(context)
         }
     }
@@ -90,7 +95,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             settingsRepo.setReminderTime(minuteOfDay)
             if (settings.value.reminderEnabled) {
-                ReminderWorker.schedule(getApplication(), minuteOfDay)
+                ReminderWorker.schedule(getApplication(), minuteOfDay, ExistingPeriodicWorkPolicy.UPDATE)
             }
         }
     }

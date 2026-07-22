@@ -37,8 +37,16 @@ class ReminderWorker(
     companion object {
         private const val WORK_NAME = "study_reminder"
 
-        /** Planuje codzienne przypomnienie na wskazaną minutę doby (pierwsze uruchomienie o tej porze). */
-        fun schedule(context: Context, minuteOfDay: Int) {
+        /**
+         * Planuje codzienne przypomnienie na wskazaną minutę doby (pierwsze uruchomienie o tej porze).
+         * @param policy KEEP przy starcie aplikacji (nie resetuje kotwicy 24h przy częstych startach),
+         *   UPDATE po zmianie godziny/włączeniu przez użytkownika.
+         */
+        fun schedule(
+            context: Context,
+            minuteOfDay: Int,
+            policy: ExistingPeriodicWorkPolicy = ExistingPeriodicWorkPolicy.KEEP
+        ) {
             val now = Calendar.getInstance()
             val target = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, minuteOfDay / 60)
@@ -51,11 +59,7 @@ class ReminderWorker(
             val request = PeriodicWorkRequestBuilder<ReminderWorker>(24, TimeUnit.HOURS)
                 .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
                 .build()
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                WORK_NAME,
-                ExistingPeriodicWorkPolicy.UPDATE,
-                request
-            )
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(WORK_NAME, policy, request)
         }
 
         fun cancel(context: Context) {

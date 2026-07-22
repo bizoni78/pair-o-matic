@@ -21,6 +21,7 @@ skojarzeń *letter pairs* metodą powiadomień.
 | [5. Funkcje aplikacji](05-funkcje-aplikacji.md) | Ekrany: statystyki, ustawienia, zarządzanie bazą, import/eksport |
 | [6. Wymagania techniczne](06-wymagania-techniczne.md) | Android, uprawnienia, ograniczenia, architektura |
 | [7. Plan rozwoju](07-plan-rozwoju.md) | Kolejność prac, zakres v1 i otwarte kwestie |
+| [🛠️ Roadmapa poprawek](ROADMAP.md) | Lista zadań z audytu kodu (bezpieczeństwo, stabilność, wydajność, testy) do wdrożenia |
 
 ---
 

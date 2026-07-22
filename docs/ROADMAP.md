@@ -19,7 +19,7 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 |---|---|---|---|
 | M1 | Bezpieczeństwo i integralność danych | SEC-1…SEC-5 | 🔴 ✅ **DONE** |
 | M2 | Stabilność i odporność | STA-1…STA-6 | 🟠 ◐ (STA-1/3/4/5/6 ✅; STA-2 TODO) |
-| M3 | Wydajność i skalowanie | PERF-1…PERF-4 | 🟡 |
+| M3 | Wydajność i skalowanie | PERF-1…PERF-4 | 🟡 ◐ (PERF-3/4 ✅; PERF-1/2 TODO) |
 | M4 | Testy i jakość | TEST-1…TEST-6 | 🟠 ◐ (TEST-1/3/4/5 ✅; TEST-2/6 TODO) |
 | M5 | Refaktor i porządki | REF-1…REF-5 | 🔵 |
 | M6 | UX i drobne | UX-1…UX-3 | 🔵 |
@@ -157,19 +157,19 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 - **Kryteria akceptacji:** Dobór działa bez ładowania całej tabeli; testy potwierdzają rozkład.
 
 ### PERF-3 — Limit nowych par (`level=null`) wprowadzanych naraz
-- **Priorytet/Rozmiar:** 🟡 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🟡 / S · **Status:** ✅ DONE
 - **Problem:** Z `CLAUDE.md` („do rozważenia") — 400 nieznanych par naraz zalewa rotację.
 - **Kroki:**
-  - [ ] Dodać strojalny limit liczby świeżych `null` w puli doboru.
-  - [ ] Udostępnić jako stałą/ustawienie.
+  - [x] Dodać strojalny limit liczby świeżych `null` w puli doboru.
+  - [x] Udostępnić jako stałą/ustawienie.
 - **Pliki:** `domain/SelectionEngine.kt`, `domain/SelectionConfig.kt`
 - **Kryteria akceptacji:** Nowe pary wchodzą stopniowo; test na limit.
 
 ### PERF-4 — Statystyki liczone w SQL (COUNT), nie w pamięci
-- **Priorytet/Rozmiar:** 🔵 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔵 / S · **Status:** ✅ DONE
 - **Problem:** `StatsViewModel` liczy `count { ... }` po pełnej liście.
 - **Kroki:**
-  - [ ] Dodać zapytania `COUNT(*)` w DAO dla każdej kategorii (lub jedno zapytanie agregujące).
+  - [x] Dodać zapytania `COUNT(*)` w DAO dla każdej kategorii (lub jedno zapytanie agregujące).
 - **Pliki:** `data/db/PairDao.kt`, `ui/stats/StatsViewModel.kt`
 - **Kryteria akceptacji:** Statystyki bez ładowania całej tabeli do pamięci UI.
 

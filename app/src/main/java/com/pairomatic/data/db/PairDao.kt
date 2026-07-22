@@ -14,6 +14,24 @@ interface PairDao {
     @Query("SELECT * FROM pairs ORDER BY letters ASC")
     fun observeAll(): Flow<List<PairEntity>>
 
+    /** Liczniki statystyk jednym zapytaniem agregującym (bez ładowania całej tabeli do pamięci). */
+    @Query(
+        """
+        SELECT
+            COUNT(*) AS total,
+            COALESCE(SUM(CASE WHEN level = 2 THEN 1 ELSE 0 END), 0) AS veryWell,
+            COALESCE(SUM(CASE WHEN level = 1 THEN 1 ELSE 0 END), 0) AS soso,
+            COALESCE(SUM(CASE WHEN level = 0 THEN 1 ELSE 0 END), 0) AS dontKnow,
+            COALESCE(SUM(CASE WHEN hardFlag = 1 THEN 1 ELSE 0 END), 0) AS hard,
+            COALESCE(SUM(CASE WHEN level IS NULL THEN 1 ELSE 0 END), 0) AS neverGraded,
+            COALESCE(SUM(CASE WHEN word = '' THEN 1 ELSE 0 END), 0) AS noWord,
+            COALESCE(SUM(CASE WHEN imagePath IS NULL OR imagePath = '' THEN 1 ELSE 0 END), 0) AS noImage,
+            COALESCE(SUM(CASE WHEN reviewFlag = 1 THEN 1 ELSE 0 END), 0) AS review
+        FROM pairs
+        """
+    )
+    fun observeStats(): Flow<StatsCounts>
+
     @Query("SELECT * FROM pairs")
     suspend fun getAll(): List<PairEntity>
 

@@ -82,6 +82,34 @@ class SelectionEngineTest {
     }
 
     @Test
+    fun `new pair limit caps how many never-graded pairs enter the pool`() {
+        // 50 nowych par, limit 10 → losowanie tylko spośród 10 najstarszych (po id).
+        val pairs = (1L..50L).map { pair(it, level = null) }
+        val limited = config.copy(newPairLimit = 10)
+        val random = Random(1)
+        val seen = HashSet<Long>()
+        repeat(3000) {
+            SelectionEngine.pickNext(pairs, now, limited, random = random)?.let { seen.add(it.id) }
+        }
+        // Powinny pojawiać się tylko pary o id 1..10.
+        assertEquals((1L..10L).toSet(), seen)
+    }
+
+    @Test
+    fun `new pair limit does not restrict graded pairs`() {
+        val newOnes = (1L..50L).map { pair(it, level = null) }
+        val old = now - 48L * 3_600_000L
+        val graded = pair(100, level = 0, lastSeen = old) // oceniona, poza limitem nowych
+        val limited = config.copy(newPairLimit = 5)
+        val random = Random(7)
+        var gradedSeen = false
+        repeat(3000) {
+            if (SelectionEngine.pickNext(newOnes + graded, now, limited, random = random)?.id == 100L) gradedSeen = true
+        }
+        assertTrue("oceniona para powinna móc się pojawić", gradedSeen)
+    }
+
+    @Test
     fun `weighted distribution favours heavier pairs`() {
         val old = now - 48L * 3_600_000L
         val heavy = pair(1, level = 0, lastSeen = old, hardFlag = true) // duża waga

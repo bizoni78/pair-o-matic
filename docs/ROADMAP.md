@@ -17,7 +17,7 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 
 | Kamień | Zakres | Zadania | Priorytet |
 |---|---|---|---|
-| M1 | Bezpieczeństwo i integralność danych | SEC-1…SEC-5 | 🔴 |
+| M1 | Bezpieczeństwo i integralność danych | SEC-1…SEC-5 | 🔴 ✅ **DONE** |
 | M2 | Stabilność i odporność | STA-1…STA-6 | 🟠 |
 | M3 | Wydajność i skalowanie | PERF-1…PERF-4 | 🟡 |
 | M4 | Testy i jakość | TEST-1…TEST-6 | 🟠 |
@@ -30,51 +30,53 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 
 ## M1 — Bezpieczeństwo i integralność danych 🔴
 
+> ✅ **Zrealizowane** w PR „M1 — hardening importu i backupu". Wszystkie kroki SEC-1…SEC-5 wdrożone.
+
 ### SEC-1 — Zip Slip: sanityzacja nazw plików przy imporcie ZIP
-- **Priorytet/Rozmiar:** 🔴 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔴 / S · **Status:** ✅ DONE
 - **Problem:** `PairRepository.importFromZip` zapisuje obrazki jako `File(imagesDir, name.removePrefix("images/"))` bez walidacji. Wpis `images/../../evil` zapisuje plik poza katalogiem aplikacji (path traversal).
 - **Kroki:**
-  - [ ] Wyodrębnić samą nazwę pliku: `File(fileName).name` (odrzuca ścieżki).
-  - [ ] Odrzucać wpisy zawierające `..`, `/`, `\` lub prowadzące poza `imagesDir` (weryfikacja `canonicalPath.startsWith(imagesDir.canonicalPath)`).
-  - [ ] Pominąć (nie przerywać importu) wpisy niebezpieczne, zalogować liczbę pominiętych.
+  - [x] Wyodrębnić samą nazwę pliku: `File(fileName).name` (odrzuca ścieżki).
+  - [x] Odrzucać wpisy zawierające `..`, `/`, `\` lub prowadzące poza `imagesDir` (weryfikacja `canonicalPath.startsWith(imagesDir.canonicalPath)`).
+  - [x] Pominąć (nie przerywać importu) wpisy niebezpieczne, zalogować liczbę pominiętych.
 - **Pliki:** `data/PairRepository.kt`
 - **Kryteria akceptacji:** ZIP z wpisem `images/../x` nie tworzy pliku poza `filesDir/images`; poprawne obrazki nadal się rozpakowują.
 
 ### SEC-2 — Atomowy import (transakcja)
-- **Priorytet/Rozmiar:** 🔴 / M · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔴 / M · **Status:** ✅ DONE
 - **Problem:** `if (replaceAll) dao.deleteAll()` + pętla insertów nie jest transakcją. Przerwanie w połowie zostawia bazę pustą/częściową → utrata talii.
 - **Kroki:**
-  - [ ] Dodać metodę `@Transaction suspend fun replaceAll(pairs: List<PairEntity>)` w DAO (deleteAll + insert w jednej transakcji) lub użyć `db.withTransaction { }`.
-  - [ ] Przepisać `importFromZip`/`importFromCsv`, aby zapis do bazy działał atomowo (najpierw sparsować całość do listy, potem jeden zapis).
-  - [ ] Obrazki wypakowywać do katalogu tymczasowego i przenosić dopiero po udanym zapisie bazy (opcjonalnie, jeśli SEC-2 rozszerzone).
+  - [x] Dodać metodę `@Transaction suspend fun replaceAll(pairs: List<PairEntity>)` w DAO (deleteAll + insert w jednej transakcji) lub użyć `db.withTransaction { }`.
+  - [x] Przepisać `importFromZip`/`importFromCsv`, aby zapis do bazy działał atomowo (najpierw sparsować całość do listy, potem jeden zapis).
+  - [ ] (opcjonalne, pominięte) Obrazki wypakowywać do katalogu tymczasowego i przenosić dopiero po udanym zapisie bazy. Nie jest to konieczne — nadmiarowe pliki sprząta „Zdrowie talii" (osierocone obrazki).
 - **Pliki:** `data/db/PairDao.kt`, `data/PairRepository.kt`, `data/db/AppDatabase.kt`
 - **Kryteria akceptacji:** Wymuszony wyjątek w trakcie importu nie zostawia częściowej bazy; przy „scal" istniejące pary nie znikają.
 
 ### SEC-3 — Wyłączyć Auto Backup (spójność z „offline")
-- **Priorytet/Rozmiar:** 🔴 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔴 / S · **Status:** ✅ DONE
 - **Problem:** `allowBackup="true"` wysyła bazę + DataStore do Google Drive użytkownika — sprzeczne z założeniem „w pełni offline, brak chmury".
 - **Kroki:**
-  - [ ] Ustawić `android:allowBackup="false"` **lub** dodać `dataExtractionRules` / `fullBackupContent` wykluczające bazę i DataStore.
-  - [ ] Zdecydować i udokumentować wybór w `docs/06-wymagania-techniczne.md`.
+  - [x] Ustawić `android:allowBackup="false"` **lub** dodać `dataExtractionRules` / `fullBackupContent` wykluczające bazę i DataStore.
+  - [x] Zdecydować i udokumentować wybór w `docs/06-wymagania-techniczne.md`.
 - **Pliki:** `AndroidManifest.xml`, ew. `res/xml/data_extraction_rules.xml`
 - **Kryteria akceptacji:** Dane nie trafiają do chmury; decyzja opisana w docs.
 
 ### SEC-4 — Limity rozmiaru importu (ochrona przed OOM / zip bomb)
-- **Priorytet/Rozmiar:** 🟠 / M · **Status:** TODO
+- **Priorytet/Rozmiar:** 🟠 / M · **Status:** ✅ DONE
 - **Problem:** `zip.readBytes()` i wczytywanie całego CSV do stringa; brak limitów na liczbę/rozmiar wpisów.
 - **Kroki:**
-  - [ ] Limit rozmiaru pojedynczego wpisu metadanych (np. 5 MB) i całkowitej liczby par (np. 10 000).
-  - [ ] Limit rozmiaru obrazka (np. 15 MB) — pomiń zbyt duże.
-  - [ ] Strumieniowe kopiowanie z licznikiem bajtów zamiast `readBytes()` tam, gdzie się da.
+  - [x] Limit rozmiaru pojedynczego wpisu metadanych (np. 5 MB) i całkowitej liczby par (np. 10 000).
+  - [x] Limit rozmiaru obrazka (np. 15 MB) — pomiń zbyt duże.
+  - [x] Strumieniowe kopiowanie z licznikiem bajtów zamiast `readBytes()` tam, gdzie się da.
 - **Pliki:** `data/PairRepository.kt`
 - **Kryteria akceptacji:** Bardzo duży/spuchnięty ZIP nie wywala aplikacji; użytkownik dostaje komunikat.
 
 ### SEC-5 — Walidacja typów obrazków przy imporcie
-- **Priorytet/Rozmiar:** 🟡 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🟡 / S · **Status:** ✅ DONE
 - **Problem:** Do `images/` trafia dowolny plik; nazwy z bazy mogą wskazywać nie-obrazki.
 - **Kroki:**
-  - [ ] Akceptować tylko rozszerzenia obrazków (`png/jpg/jpeg/webp`) w `images/`.
-  - [ ] Zignorować pozostałe wpisy.
+  - [x] Akceptować tylko rozszerzenia obrazków (`png/jpg/jpeg/webp`) w `images/`.
+  - [x] Zignorować pozostałe wpisy.
 - **Pliki:** `data/PairRepository.kt`
 - **Kryteria akceptacji:** Nie-obrazki nie są zapisywane do `images/`.
 

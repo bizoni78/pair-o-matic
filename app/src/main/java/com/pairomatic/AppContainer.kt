@@ -13,7 +13,7 @@ import com.pairomatic.notifications.NotificationScheduler
 class AppContainer(context: Context) {
     private val database = AppDatabase.get(context)
 
-    val pairRepository = PairRepository(database.pairDao(), context)
+    val pairRepository = PairRepository(database, context)
     val settingsRepository = SettingsRepository(context)
     val notificationScheduler = NotificationScheduler(
         context.applicationContext, pairRepository, settingsRepository

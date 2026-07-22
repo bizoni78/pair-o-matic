@@ -88,4 +88,14 @@ wygodnym przeglądaniu takiej liczby pozycji.
 
 ---
 
+## 🔒 Prywatność i kopie zapasowe
+
+Aplikacja jest **w pełni offline** — brak kont, chmury i synchronizacji. Zgodnie z tym założeniem
+**Android Auto Backup jest wyłączony** (`android:allowBackup="false"` w `AndroidManifest.xml`),
+żeby baza par, statystyki i ustawienia (DataStore) **nie trafiały do Google Drive**. Kopie zapasowe
+robi się świadomie i lokalnie — przez eksport talii do `.zip`/`.csv` (SAF), a aktualizacje aplikacji
+zachowują dane dzięki stałemu kluczowi podpisu.
+
+---
+
 [← Poprzednio: Funkcje aplikacji](05-funkcje-aplikacji.md) · [Spis treści](README.md) · [Dalej: Plan rozwoju →](07-plan-rozwoju.md)

@@ -2,14 +2,17 @@ package com.pairomatic.data
 
 import android.content.Context
 import android.net.Uri
-import com.pairomatic.data.db.PairDao
+import androidx.room.withTransaction
+import com.pairomatic.data.db.AppDatabase
 import com.pairomatic.data.db.PairEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.InputStream
 import java.util.UUID
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
@@ -20,9 +23,10 @@ import java.util.zip.ZipOutputStream
  * wewnętrznej oraz import/eksport talii do pliku `.zip`.
  */
 class PairRepository(
-    private val dao: PairDao,
+    private val database: AppDatabase,
     context: Context
 ) {
+    private val dao = database.pairDao()
     private val appContext = context.applicationContext
     private val imagesDir: File = File(appContext.filesDir, "images").apply { mkdirs() }
 
@@ -203,19 +207,26 @@ class PairRepository(
         var pairsJson: String? = null
         var pairsCsv: String? = null
         // Krok 1: wypakuj obrazki i wczytaj metadane (pairs.json ALBO dowolny plik .csv).
-        appContext.contentResolver.openInputStream(source)!!.use { raw ->
+        val input = appContext.contentResolver.openInputStream(source) ?: return@withContext
+        input.use { raw ->
             ZipInputStream(raw).use { zip ->
                 var entry: ZipEntry? = zip.nextEntry
                 while (entry != null) {
                     val name = entry.name
                     when {
-                        name == "pairs.json" -> pairsJson = zip.readBytes().decodeToString()
+                        name == "pairs.json" -> pairsJson = readLimited(zip, MAX_META_BYTES)
                         !entry.isDirectory && name.endsWith(".csv", ignoreCase = true) ->
-                            pairsCsv = zip.readBytes().decodeToString()
+                            pairsCsv = readLimited(zip, MAX_META_BYTES)
                         name.startsWith("images/") && !entry.isDirectory -> {
-                            val fileName = name.removePrefix("images/")
-                            if (fileName.isNotBlank()) {
-                                File(imagesDir, fileName).outputStream().use { zip.copyTo(it) }
+                            // SEC-1: bierzemy WYŁĄCZNIE nazwę pliku (chroni przed zip-slip: „images/../../x").
+                            val safeName = File(name.removePrefix("images/")).name
+                            // SEC-5: tylko pliki obrazków.
+                            if (safeName.isNotBlank() && isAllowedImage(safeName)) {
+                                val target = File(imagesDir, safeName)
+                                // SEC-4: limit rozmiaru pojedynczego obrazka.
+                                if (isInsideImagesDir(target)) {
+                                    copyLimited(zip, target, MAX_IMAGE_BYTES)
+                                }
                             }
                         }
                     }
@@ -225,35 +236,43 @@ class PairRepository(
             }
         }
 
-        // Krok 2: zapisz pary — preferuj JSON, w przeciwnym razie CSV. (kopie do val dla smart-castu)
+        // Krok 2: sparsuj metadane, a zapis do bazy wykonaj ATOMOWO (SEC-2 — transakcja).
         val jsonContent = pairsJson
         val csvContent = pairsCsv
         when {
             jsonContent != null -> {
-                if (replaceAll) dao.deleteAll()
                 val array = JSONArray(jsonContent)
-                for (i in 0 until array.length()) {
+                val incoming = ArrayList<PairEntity>(minOf(array.length(), MAX_PAIRS))
+                for (i in 0 until minOf(array.length(), MAX_PAIRS)) {
                     val obj = array.getJSONObject(i)
-                    val letters = obj.getString("letters")
-                    val incoming = PairEntity(
-                        letters = letters,
-                        word = obj.optString("word", ""),
-                        imagePath = obj.optString("image", null)?.takeIf { it.isNotBlank() && it != "null" },
-                        level = if (obj.isNull("level")) null else obj.optInt("level"),
-                        lastSeen = if (obj.isNull("lastSeen")) null else obj.optLong("lastSeen"),
-                        hardFlag = obj.optBoolean("hardFlag", false),
-                        reviewFlag = obj.optBoolean("reviewFlag", false)
+                    incoming.add(
+                        PairEntity(
+                            letters = obj.getString("letters"),
+                            word = obj.optString("word", ""),
+                            imagePath = obj.optString("image", null)?.takeIf { it.isNotBlank() && it != "null" },
+                            level = if (obj.isNull("level")) null else obj.optInt("level"),
+                            lastSeen = if (obj.isNull("lastSeen")) null else obj.optLong("lastSeen"),
+                            hardFlag = obj.optBoolean("hardFlag", false),
+                            reviewFlag = obj.optBoolean("reviewFlag", false)
+                        )
                     )
-                    val existing = dao.getByLetters(letters)
-                    if (existing == null) dao.insert(incoming)
-                    else dao.update(incoming.copy(id = existing.id))
+                }
+                database.withTransaction {
+                    if (replaceAll) dao.deleteAll()
+                    for (inc in incoming) {
+                        val existing = dao.getByLetters(inc.letters)
+                        if (existing == null) dao.insert(inc)
+                        else dao.update(inc.copy(id = existing.id))
+                    }
                 }
             }
             csvContent != null -> {
-                val rows = parseCsv(csvContent)
+                val rows = parseCsv(csvContent).take(MAX_PAIRS)
                 if (rows.isNotEmpty()) {
-                    if (replaceAll) dao.deleteAll()
-                    upsertCsvRows(rows)
+                    database.withTransaction {
+                        if (replaceAll) dao.deleteAll()
+                        upsertCsvRows(rows)
+                    }
                 }
             }
         }
@@ -268,13 +287,14 @@ class PairRepository(
      *                   (zachowując istniejące statystyki i obrazek, jeśli CSV go nie podaje).
      */
     suspend fun importFromCsv(source: Uri, replaceAll: Boolean) = withContext(Dispatchers.IO) {
-        val text = appContext.contentResolver.openInputStream(source)!!.use {
-            it.readBytes().decodeToString()
-        }
-        val rows = parseCsv(text)
+        val text = appContext.contentResolver.openInputStream(source)?.use { readLimited(it, MAX_META_BYTES) }
+            ?: return@withContext
+        val rows = parseCsv(text).take(MAX_PAIRS)
         if (rows.isEmpty()) return@withContext
-        if (replaceAll) dao.deleteAll()
-        upsertCsvRows(rows)
+        database.withTransaction {
+            if (replaceAll) dao.deleteAll()
+            upsertCsvRows(rows)
+        }
     }
 
     /**
@@ -339,5 +359,57 @@ class PairRepository(
         }
         fields.add(sb.toString())
         return fields
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Bezpieczeństwo importu (SEC-1, SEC-4, SEC-5)
+    // ---------------------------------------------------------------------------------------------
+
+    private fun isAllowedImage(name: String): Boolean =
+        name.substringAfterLast('.', "").lowercase() in ALLOWED_IMAGE_EXT
+
+    /** Sprawdza, że plik faktycznie leży w katalogu obrazków (dodatkowa ochrona przed zip-slip). */
+    private fun isInsideImagesDir(file: File): Boolean =
+        file.canonicalPath.startsWith(imagesDir.canonicalPath + File.separator)
+
+    /** Kopiuje strumień do pliku z limitem bajtów; po przekroczeniu usuwa plik i zwraca false. */
+    private fun copyLimited(input: InputStream, target: File, maxBytes: Long): Boolean {
+        var total = 0L
+        target.outputStream().use { out ->
+            val buf = ByteArray(8192)
+            while (true) {
+                val n = input.read(buf)
+                if (n < 0) break
+                total += n
+                if (total > maxBytes) {
+                    target.delete()
+                    return false
+                }
+                out.write(buf, 0, n)
+            }
+        }
+        return true
+    }
+
+    /** Wczytuje strumień do stringa z limitem bajtów; zwraca null, gdy przekroczono limit. */
+    private fun readLimited(input: InputStream, maxBytes: Int): String? {
+        val out = ByteArrayOutputStream()
+        val buf = ByteArray(8192)
+        var total = 0
+        while (true) {
+            val n = input.read(buf)
+            if (n < 0) break
+            total += n
+            if (total > maxBytes) return null
+            out.write(buf, 0, n)
+        }
+        return out.toString(Charsets.UTF_8.name())
+    }
+
+    companion object {
+        private const val MAX_PAIRS = 10_000
+        private const val MAX_META_BYTES = 8 * 1024 * 1024       // 8 MB (pairs.json / csv)
+        private const val MAX_IMAGE_BYTES = 15L * 1024 * 1024    // 15 MB na obrazek
+        private val ALLOWED_IMAGE_EXT = setOf("png", "jpg", "jpeg", "webp")
     }
 }

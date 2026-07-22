@@ -10,31 +10,42 @@ import com.pairomatic.domain.SchedulerRules
 import com.pairomatic.domain.SelectionConfig
 import com.pairomatic.domain.SelectionEngine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Spina dobór pary z regułami planowania i wyświetlaniem powiadomień.
  * Wywoływany zdarzeniowo (odbiorniki trybu testu) oraz z timera (immersja).
+ *
+ * STA-6: `postMutex` serializuje pokazywanie kolejnego powiadomienia — szybkie taps/oceny
+ * nie wywołają kilku `postNext*` naraz (brak podwójnych powiadomień).
+ * STA-3: dzięki temu dostęp do [recentImmersion] jest też bezpieczny wątkowo.
  */
 class NotificationScheduler(
     private val context: Context,
     private val pairRepository: PairRepository,
     private val settingsRepository: SettingsRepository
 ) {
+    private val postMutex = Mutex()
+
+    // Ulotna lista „ostatnio pokazanych" w immersji — tylko w pamięci, chroniona przez postMutex.
+    private val recentImmersion = LinkedHashSet<Long>()
+
     /**
      * Pokazuje kolejną parę w trybie testu (po ocenie lub odrzuceniu).
      * @param excludeId para do pominięcia w najbliższym losowaniu (np. właśnie odrzucona przez swipe),
      *   żeby nie pokazać od razu tej samej.
      */
-    suspend fun postNextTest(excludeId: Long? = null) {
+    suspend fun postNextTest(excludeId: Long? = null) = postMutex.withLock {
         val settings = settingsRepository.settings.first()
         if (!canPost(settings)) {
             NotificationHelper.cancel(context)
-            return
+            return@withLock
         }
         val pairs = pairRepository.getAllPairs()
         if (pairs.isEmpty()) {
             NotificationHelper.cancel(context)
-            return
+            return@withLock
         }
         // WAŻNE: nigdy nie urywamy łańcucha. Jeśli cooldown wyzeruje całą pulę (mała talia,
         // wszystko świeżo ocenione), dobieramy parę mimo wszystko (bez cooldownu) — inaczej
@@ -47,18 +58,18 @@ class NotificationScheduler(
     }
 
     /** Pokazuje kolejną parę w trybie immersji (tick timera). Nie zmienia statystyk. */
-    suspend fun postNextImmersion() {
+    suspend fun postNextImmersion() = postMutex.withLock {
         val settings = settingsRepository.settings.first()
         if (!canPost(settings)) {
             NotificationHelper.cancel(context)
-            return
+            return@withLock
         }
         val pairs = pairRepository.getAllPairs()
         if (pairs.isEmpty()) {
             NotificationHelper.cancel(context)
-            return
+            return@withLock
         }
-        val next = pickWithFallback(pairs, exclude = recentImmersion)
+        val next = pickWithFallback(pairs, exclude = recentImmersion.toSet())
         rememberImmersion(next.id)
         NotificationHelper.showImmersion(
             context, next, pairRepository.imagesDirectory, settings.importance
@@ -78,8 +89,8 @@ class NotificationScheduler(
 
     /** Uruchamia pierwszą parę zależnie od aktywnego trybu (np. z ekranu ustawień). */
     suspend fun postFirst() {
-        val settings = settingsRepository.settings.first()
-        when (settings.mode) {
+        val mode = settingsRepository.settings.first().mode
+        when (mode) {
             LearningMode.TEST -> postNextTest()
             LearningMode.IMMERSION -> postNextImmersion()
         }
@@ -96,6 +107,7 @@ class NotificationScheduler(
         return true
     }
 
+    /** Wywoływane pod [postMutex]. */
     private fun rememberImmersion(id: Long) {
         recentImmersion.add(id)
         while (recentImmersion.size > RECENT_CAP) {
@@ -105,8 +117,6 @@ class NotificationScheduler(
 
     companion object {
         private const val RECENT_CAP = 10
-        // Ulotna lista „ostatnio pokazanych" w immersji — celowo tylko w pamięci.
-        private val recentImmersion = LinkedHashSet<Long>()
         // Konfiguracja awaryjna: ten sam dobór, ale bez cooldownu (fallback dla łańcucha).
         private val NO_COOLDOWN = SelectionConfig.DEFAULT.copy(cooldownMillis = 0L)
     }

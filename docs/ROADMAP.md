@@ -18,7 +18,7 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 | Kamień | Zakres | Zadania | Priorytet |
 |---|---|---|---|
 | M1 | Bezpieczeństwo i integralność danych | SEC-1…SEC-5 | 🔴 ✅ **DONE** |
-| M2 | Stabilność i odporność | STA-1…STA-6 | 🟠 |
+| M2 | Stabilność i odporność | STA-1…STA-6 | 🟠 ◐ (STA-1/3/4/5/6 ✅; STA-2 TODO) |
 | M3 | Wydajność i skalowanie | PERF-1…PERF-4 | 🟡 |
 | M4 | Testy i jakość | TEST-1…TEST-6 | 🟠 ◐ (TEST-1/3/4/5 ✅; TEST-2/6 TODO) |
 | M5 | Refaktor i porządki | REF-1…REF-5 | 🔵 |
@@ -85,12 +85,12 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 ## M2 — Stabilność i odporność 🟠
 
 ### STA-1 — Downsampling bitmap w powiadomieniach
-- **Priorytet/Rozmiar:** 🟠 / M · **Status:** TODO
+- **Priorytet/Rozmiar:** 🟠 / M · **Status:** ✅ DONE
 - **Problem:** `BitmapFactory.decodeFile` bez `inSampleSize`; obrazek z aparatu (kilka tys. px) → ogromny bitmap → OOM lub przekroczenie limitu rozmiaru powiadomienia (obraz się nie pokazuje).
 - **Kroki:**
-  - [ ] Odczyt wymiarów (`inJustDecodeBounds=true`), policzyć `inSampleSize` do docelowej krawędzi ~1024 px.
-  - [ ] Dekodować z próbkowaniem; obsłużyć `null`.
-  - [ ] Wydzielić helper `decodeSampledBitmap(file, maxEdge)`.
+  - [x] Odczyt wymiarów (`inJustDecodeBounds=true`), policzyć `inSampleSize` do docelowej krawędzi ~1024 px.
+  - [x] Dekodować z próbkowaniem; obsłużyć `null`.
+  - [x] Wydzielić helper `decodeSampledBitmap(file, maxEdge)`.
 - **Pliki:** `notifications/NotificationHelper.kt`
 - **Kryteria akceptacji:** Duży obrazek wyświetla się w powiadomieniu bez OOM; zużycie pamięci ograniczone.
 
@@ -104,34 +104,34 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 - **Kryteria akceptacji:** Duże zdjęcie zapisuje się jako rozsądnej wielkości plik.
 
 ### STA-3 — `recentImmersion` thread-safe
-- **Priorytet/Rozmiar:** 🟡 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🟡 / S · **Status:** ✅ DONE
 - **Problem:** Statyczny `LinkedHashSet` mutowany z korutyn IO bez synchronizacji → ryzyko `ConcurrentModificationException`.
 - **Kroki:**
-  - [ ] Owinąć w `Collections.synchronizedSet` lub chronić `Mutex`/`synchronized`.
+  - [x] Owinąć w `Collections.synchronizedSet` lub chronić `Mutex`/`synchronized`.
 - **Pliki:** `notifications/NotificationScheduler.kt`
 - **Kryteria akceptacji:** Brak wyścigu przy równoległych tickach.
 
 ### STA-4 — Bezpieczne otwieranie strumieni (usunąć `!!`)
-- **Priorytet/Rozmiar:** 🟡 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🟡 / S · **Status:** ✅ DONE
 - **Problem:** `openInputStream(source)!!` / `openOutputStream(target)!!` mogą rzucić NPE.
 - **Kroki:**
-  - [ ] Zamienić na sprawdzenie null + czytelny błąd/komunikat.
+  - [x] Zamienić na sprawdzenie null + czytelny błąd/komunikat.
 - **Pliki:** `data/PairRepository.kt`
 - **Kryteria akceptacji:** Nieotwarty strumień → komunikat, nie crash.
 
 ### STA-5 — Audyt guardów w widgetach i odbiornikach
-- **Priorytet/Rozmiar:** 🔵 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔵 / S · **Status:** ✅ DONE
 - **Kroki:**
-  - [ ] Sprawdzić wszystkie ścieżki `applicationContext as PairOMaticApp` pod kątem wyjątku, gdy proces w nietypowym stanie.
-  - [ ] Upewnić się, że `goAsync().finish()` zawsze się wykonuje (try/finally — jest, potwierdzić).
+  - [x] Sprawdzić wszystkie ścieżki `applicationContext as PairOMaticApp` pod kątem wyjątku, gdy proces w nietypowym stanie.
+  - [x] Upewnić się, że `goAsync().finish()` zawsze się wykonuje (try/finally — jest, potwierdzić).
 - **Pliki:** `widget/*`, `notifications/*Receiver.kt`
 - **Kryteria akceptacji:** Brak ścieżek bez `finish()`.
 
 ### STA-6 — Zabezpieczenie przed równoległym `postNextTest`
-- **Priorytet/Rozmiar:** 🔵 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔵 / S · **Status:** ✅ DONE
 - **Problem:** Szybkie taps/oceny mogą wywołać kilka `postNextTest` naraz (podwójne powiadomienie).
 - **Kroki:**
-  - [ ] Lekki throttling/idempotencja (np. jeden `Mutex` w schedulerze) lub `setOnlyAlertOnce` przy zamianie.
+  - [x] Lekki throttling/idempotencja (np. jeden `Mutex` w schedulerze) lub `setOnlyAlertOnce` przy zamianie.
 - **Pliki:** `notifications/NotificationScheduler.kt`
 - **Kryteria akceptacji:** Brak podwójnych powiadomień przy szybkich akcjach.
 

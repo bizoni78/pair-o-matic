@@ -28,18 +28,19 @@ class StatsViewModel(
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
-    val state: StateFlow<StatsState> = repository.observeAll()
-        .map { pairs ->
+    // PERF-4: liczniki liczone w SQL (COUNT/SUM), bez ładowania całej tabeli do pamięci.
+    val state: StateFlow<StatsState> = repository.observeStats()
+        .map { c ->
             StatsState(
-                total = pairs.size,
-                veryWell = pairs.count { it.level == 2 },
-                soso = pairs.count { it.level == 1 },
-                dontKnow = pairs.count { it.level == 0 },
-                hard = pairs.count { it.hardFlag },
-                neverGraded = pairs.count { it.level == null },
-                noWord = pairs.count { it.word.isBlank() },
-                noImage = pairs.count { it.imagePath.isNullOrBlank() },
-                review = pairs.count { it.reviewFlag }
+                total = c.total,
+                veryWell = c.veryWell,
+                soso = c.soso,
+                dontKnow = c.dontKnow,
+                hard = c.hard,
+                neverGraded = c.neverGraded,
+                noWord = c.noWord,
+                noImage = c.noImage,
+                review = c.review
             )
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StatsState())

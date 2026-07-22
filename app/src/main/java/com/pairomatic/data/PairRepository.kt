@@ -33,6 +33,9 @@ class PairRepository(
 
     fun observeAll(): Flow<List<PairEntity>> = dao.observeAll()
 
+    /** Liczniki statystyk liczone w SQL (bez ładowania całej tabeli do pamięci). */
+    fun observeStats(): Flow<com.pairomatic.data.db.StatsCounts> = dao.observeStats()
+
     suspend fun getAllPairs(): List<PairEntity> = withContext(Dispatchers.IO) { dao.getAll() }
 
     suspend fun getById(id: Long): PairEntity? = dao.getById(id)

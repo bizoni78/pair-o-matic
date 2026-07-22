@@ -10,7 +10,13 @@ data class SelectionConfig(
     val levelWeight2: Double = 1.0,
     val hardFlagBoost: Double = 3.0,
     val cooldownMillis: Long = 30L * 60L * 1000L,
-    val recencyCapHours: Double = 24.0
+    val recencyCapHours: Double = 24.0,
+    /**
+     * Maks. liczba par nigdy nieocenionych (`level == null`) dopuszczonych naraz do losowania.
+     * Chroni przed zalaniem rotacji wszystkimi nowymi parami przy dużej talii. `null` = brak limitu.
+     * Dopuszczane są najstarsze (po `id`) nowe pary; kolejne wchodzą, gdy wcześniejsze zostaną ocenione.
+     */
+    val newPairLimit: Int? = 30
 ) {
     fun levelWeight(level: Int?): Double = when (level) {
         0 -> levelWeight0

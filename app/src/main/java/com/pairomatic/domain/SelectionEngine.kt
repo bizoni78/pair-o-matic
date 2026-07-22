@@ -51,8 +51,9 @@ object SelectionEngine {
         exclude: Set<Long> = emptySet(),
         random: Random = Random.Default
     ): PairEntity? {
-        val weighted = pairs.asSequence()
-            .filter { it.id !in exclude }
+        val base = pairs.filter { it.id !in exclude }
+        val limited = applyNewPairLimit(base, config)
+        val weighted = limited.asSequence()
             .map { it to weight(it, now, config) }
             .filter { it.second > 0.0 }
             .toList()
@@ -70,5 +71,17 @@ object SelectionEngine {
             if (threshold <= 0.0) return pair
         }
         return weighted.last().first
+    }
+
+    /**
+     * Ogranicza liczbę nowych (`level == null`) par w puli do [SelectionConfig.newPairLimit].
+     * Dopuszcza najstarsze po `id`; pary ocenione przechodzą bez zmian. `null` = brak limitu.
+     */
+    private fun applyNewPairLimit(pairs: List<PairEntity>, config: SelectionConfig): List<PairEntity> {
+        val limit = config.newPairLimit ?: return pairs
+        val newOnes = pairs.filter { it.level == null }
+        if (newOnes.size <= limit) return pairs
+        val allowed = newOnes.sortedBy { it.id }.take(limit).mapTo(HashSet()) { it.id }
+        return pairs.filter { it.level != null || it.id in allowed }
     }
 }

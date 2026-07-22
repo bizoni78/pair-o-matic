@@ -35,6 +35,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.pairomatic.ui.components.AppTopBar
 import com.pairomatic.ui.rememberAppContainer
+import com.pairomatic.util.dayWord
 import com.pairomatic.ui.theme.BrandAmber
 import com.pairomatic.ui.theme.BrandBlue
 import com.pairomatic.ui.theme.BrandGreen
@@ -174,7 +175,6 @@ private fun MotivationCard(
     }
 }
 
-private fun dayWord(n: Int): String = if (n == 1) "dzień" else "dni"
 
 @Composable
 private fun BackupReminder(daysSince: Int?) {

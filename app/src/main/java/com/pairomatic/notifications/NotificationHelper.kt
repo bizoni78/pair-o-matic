@@ -7,16 +7,12 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Typeface
-import android.text.SpannableString
-import android.text.Spanned
-import android.text.style.StyleSpan
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.pairomatic.R
 import com.pairomatic.data.db.PairEntity
 import com.pairomatic.data.settings.NotificationImportance
-import com.pairomatic.domain.pairLetterIndices
+import com.pairomatic.util.boldPairLettersSpannable
 import java.io.File
 
 /**
@@ -141,12 +137,10 @@ object NotificationHelper {
             .setSmallIcon(R.drawable.ic_notification)
             .setAutoCancel(false)
             // setSilent(true) wycisza dźwięk i wibracje NIEZALEŻNIE od kanału (kanał jest HIGH,
-            // więc bez tego „Cichy" i tak by dzwonił na Androidzie 8+). To realny przełącznik dźwięku.
+            // więc bez tego „Cichy" i tak by dzwonił). To realny przełącznik dźwięku.
+            // Uwaga: na minSdk 26 to KANAŁ (nie priorytet) rządzi dźwiękiem/heads-up,
+            // dlatego setPriority jest zbędny i został usunięty (REF-2).
             .setSilent(importance == NotificationImportance.SILENT)
-            .setPriority(
-                if (importance == NotificationImportance.HEADS_UP) NotificationCompat.PRIORITY_HIGH
-                else NotificationCompat.PRIORITY_LOW
-            )
 
     private fun notify(context: Context, notification: android.app.Notification) {
         // Uprawnienie POST_NOTIFICATIONS jest sprawdzane przy starcie aplikacji; jeśli go brak,
@@ -162,17 +156,8 @@ object NotificationHelper {
      * Słowo pary z pogrubionymi literami pary (np. „CT" + „Cytryna" → **C**y**t**ryna).
      * Zwraca zwykły String, jeśli słowo jest puste lub nie da się dopasować liter.
      */
-    private fun boldedWord(pair: PairEntity): CharSequence {
-        val word = pair.word
-        if (word.isBlank()) return word
-        val indices = pairLetterIndices(word, pair.letters)
-        if (indices.isEmpty()) return word
-        val spannable = SpannableString(word)
-        for (i in indices) {
-            spannable.setSpan(StyleSpan(Typeface.BOLD), i, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        }
-        return spannable
-    }
+    private fun boldedWord(pair: PairEntity): CharSequence =
+        boldPairLettersSpannable(pair.word, pair.letters, blankPlaceholder = pair.word)
 
     private fun loadBitmap(fileName: String?, imageDir: File): Bitmap? {
         if (fileName.isNullOrBlank()) return null

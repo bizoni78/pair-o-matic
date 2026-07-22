@@ -72,6 +72,7 @@ import com.pairomatic.ui.theme.BrandBlue
 import com.pairomatic.ui.theme.BrandGreen
 import com.pairomatic.ui.theme.BrandRed
 import com.pairomatic.ui.theme.letterColor
+import com.pairomatic.util.pairsWord
 
 @Composable
 fun PairListScreen(
@@ -93,7 +94,7 @@ fun PairListScreen(
     LaunchedEffect(undo.id) {
         if (undo.id > 0L) {
             val result = snackbarHostState.showSnackbar(
-                message = "Usunięto ${undo.count} ${pairCountWord(undo.count)}",
+                message = "Usunięto ${undo.count} ${pairsWord(undo.count)}",
                 actionLabel = "Cofnij"
             )
             if (result == SnackbarResult.ActionPerformed) viewModel.undoDelete()
@@ -461,17 +462,6 @@ private fun LetterAvatar(letters: String) {
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
-    }
-}
-
-/** Polska odmiana: 1 para, 2–4 pary, 5+ par (z wyjątkiem 12–14). */
-private fun pairCountWord(n: Int): String {
-    val lastTwo = n % 100
-    val last = n % 10
-    return when {
-        n == 1 -> "parę"
-        last in 2..4 && lastTwo !in 12..14 -> "pary"
-        else -> "par"
     }
 }
 

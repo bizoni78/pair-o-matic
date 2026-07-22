@@ -22,7 +22,7 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 | M3 | Wydajność i skalowanie | PERF-1…PERF-4 | 🟡 ◐ (PERF-3/4 ✅; PERF-1/2 TODO) |
 | M4 | Testy i jakość | TEST-1…TEST-6 | 🟠 ◐ (TEST-1/3/4/5 ✅; TEST-2/6 TODO) |
 | M5 | Refaktor i porządki | REF-1…REF-5 | 🔵 ✅ **DONE** |
-| M6 | UX i drobne | UX-1…UX-3 | 🔵 |
+| M6 | UX i drobne | UX-1…UX-3 | 🔵 ✅ **DONE** |
 
 **Sugerowana kolejność wdrażania:** M1 → M4 (testy równolegle, chronią kolejne zmiany) → M2 → M3 → M5 → M6.
 
@@ -268,26 +268,26 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 ## M6 — UX i drobne 🔵
 
 ### UX-1 — Splash/placeholder zamiast pustego ekranu przy starcie
-- **Priorytet/Rozmiar:** 🔵 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔵 / S · **Status:** ✅ DONE
 - **Problem:** `MainActivity` pokazuje pusty ekran, dopóki ustawienia się nie wczytają (null state).
 - **Kroki:**
-  - [ ] Prosty placeholder na gradiencie (logo/spinner) na czas ładowania.
+  - [x] Prosty placeholder na gradiencie (logo/spinner) na czas ładowania.
 - **Pliki:** `MainActivity.kt`
 - **Kryteria akceptacji:** Brak „mignięcia" pustego ekranu.
 
 ### UX-2 — Prośba o `POST_NOTIFICATIONS` poza onboardingiem
-- **Priorytet/Rozmiar:** 🔵 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔵 / S · **Status:** ✅ DONE
 - **Problem:** Jeśli użytkownik pominie onboarding, uprawnienie nie zostanie poproszone.
 - **Kroki:**
-  - [ ] Delikatny baner/CTA w aplikacji, gdy brak uprawnienia i powiadomienia włączone.
+  - [x] Delikatny baner/CTA w aplikacji, gdy brak uprawnienia i powiadomienia włączone.
 - **Pliki:** `ui/…`
 - **Kryteria akceptacji:** Użytkownik ma drugą szansę na nadanie uprawnienia.
 
 ### UX-3 — Reminder: polityka `KEEP` + reschedule tylko przy zmianie godziny
-- **Priorytet/Rozmiar:** 🔵 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔵 / S · **Status:** ✅ DONE
 - **Problem:** `enqueueUniquePeriodicWork(UPDATE)` przy każdym starcie resetuje kotwicę 24h.
 - **Kroki:**
-  - [ ] Użyć `KEEP` przy starcie; `UPDATE` tylko po zmianie godziny/przełącznika.
+  - [x] Użyć `KEEP` przy starcie; `UPDATE` tylko po zmianie godziny/przełącznika.
 - **Pliki:** `reminder/ReminderWorker.kt`, `PairOMaticApp.kt`, `ui/settings/SettingsViewModel.kt`
 - **Kryteria akceptacji:** Przypomnienie stabilnie odpala się o wybranej porze mimo częstych startów apki.
 

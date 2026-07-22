@@ -8,7 +8,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,7 +49,9 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val current = settings
                     when {
-                        current == null -> Unit  // krótki splash zanim wczytają się ustawienia
+                        current == null -> CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center)
+                        )  // krótki splash zanim wczytają się ustawienia
                         !current.onboardingDone -> OnboardingScreen(
                             onDone = { scope.launch { settingsRepository.setOnboardingDone(true) } }
                         )

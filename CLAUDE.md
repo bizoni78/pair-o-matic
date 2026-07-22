@@ -4,10 +4,19 @@ Ten plik dostarcza kontekst dla Claude Code (claude.ai/code) podczas pracy nad t
 
 ## Status repozytorium
 
-**Projekt jest na etapie specyfikacji — kod aplikacji jeszcze nie istnieje.** Repozytorium zawiera obecnie
-tylko dokumentację. Poniższy opis to plan implementacji, nie opis istniejącego kodu. Gdy w repo pojawi się
-szkielet projektu (Gradle, moduły, struktura pakietów), **zaktualizuj tę sekcję i dodaj sekcję "Komendy budowania
-i testowania"** z realnymi komendami (`./gradlew build`, `./gradlew test`, itp.).
+**Aplikacja jest zaimplementowana i rozwijana.** Repozytorium zawiera pełny, działający kod (Kotlin +
+Jetpack Compose, pojedynczy moduł `:app`, pakiet `com.pairomatic`) oraz dokumentację w `docs/`. Wydania
+buduje CI i publikuje jako APK w GitHub Releases. Bieżące zadania techniczne (bezpieczeństwo, stabilność,
+wydajność, testy) są śledzone w [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+### Komendy budowania i testowania
+
+- `./gradlew testDebugUnitTest` — testy jednostkowe (czysta logika: `SelectionEngine`, `SchedulerRules`,
+  `pairLetterIndices`, `CsvParser`). Uruchamiane też w CI.
+- `./gradlew assembleDebug` — zbudowanie debugowego APK.
+- `./gradlew lint` — statyczna analiza (opcjonalnie).
+
+> Uwaga (środowisko web): SDK Androida bywa niedostępne lokalnie — kompilację i testy weryfikuje CI.
 
 ## Co to za projekt
 

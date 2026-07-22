@@ -83,7 +83,7 @@ class NotificationScheduler(
     private fun pickWithFallback(pairs: List<PairEntity>, exclude: Set<Long>): PairEntity {
         val now = System.currentTimeMillis()
         return SelectionEngine.pickNext(pairs, now, SelectionConfig.DEFAULT, exclude)
-            ?: SelectionEngine.pickNext(pairs, now, NO_COOLDOWN, exclude)
+            ?: SelectionEngine.pickNext(pairs, now, SelectionConfig.NO_COOLDOWN, exclude)
             ?: pairs.random()
     }
 
@@ -117,7 +117,5 @@ class NotificationScheduler(
 
     companion object {
         private const val RECENT_CAP = 10
-        // Konfiguracja awaryjna: ten sam dobór, ale bez cooldownu (fallback dla łańcucha).
-        private val NO_COOLDOWN = SelectionConfig.DEFAULT.copy(cooldownMillis = 0L)
     }
 }

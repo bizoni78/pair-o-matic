@@ -10,6 +10,7 @@ import com.pairomatic.MainActivity
 import com.pairomatic.PairOMaticApp
 import com.pairomatic.R
 import com.pairomatic.data.settings.ProgressStats
+import com.pairomatic.util.dayWord
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -58,6 +59,4 @@ class LearnWidgetProvider : AppWidgetProvider() {
         views.setOnClickPendingIntent(R.id.widget_root, pi)
         return views
     }
-
-    private fun dayWord(n: Int): String = if (n == 1) "dzień" else "dni"
 }

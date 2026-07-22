@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Kolory marki używane w widgetach (spójne z paletą z ui/theme/Theme.kt). -->
+    <color name="brand_indigo">#4F46E5</color>
+    <color name="brand_purple">#7C3AED</color>
+    <color name="brand_pink">#EC4899</color>
+    <color name="widget_pair_surface">#EDE7FF</color>
+    <color name="widget_pair_stroke">#337C3AED</color>
+    <color name="widget_white">#FFFFFF</color>
+</resources>

@@ -27,5 +27,8 @@ data class SelectionConfig(
 
     companion object {
         val DEFAULT = SelectionConfig()
+
+        /** Ten sam dobór co [DEFAULT], ale bez cooldownu — dla ciągłego strumienia (fallback, widget). */
+        val NO_COOLDOWN = DEFAULT.copy(cooldownMillis = 0L)
     }
 }

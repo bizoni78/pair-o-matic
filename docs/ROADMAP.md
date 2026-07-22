@@ -21,7 +21,7 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 | M2 | Stabilność i odporność | STA-1…STA-6 | 🟠 ◐ (STA-1/3/4/5/6 ✅; STA-2 TODO) |
 | M3 | Wydajność i skalowanie | PERF-1…PERF-4 | 🟡 ◐ (PERF-3/4 ✅; PERF-1/2 TODO) |
 | M4 | Testy i jakość | TEST-1…TEST-6 | 🟠 ◐ (TEST-1/3/4/5 ✅; TEST-2/6 TODO) |
-| M5 | Refaktor i porządki | REF-1…REF-5 | 🔵 |
+| M5 | Refaktor i porządki | REF-1…REF-5 | 🔵 ✅ **DONE** |
 | M6 | UX i drobne | UX-1…UX-3 | 🔵 |
 
 **Sugerowana kolejność wdrażania:** M1 → M4 (testy równolegle, chronią kolejne zmiany) → M2 → M3 → M5 → M6.
@@ -227,39 +227,39 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 ## M5 — Refaktor i porządki 🔵
 
 ### REF-1 — Scalić logikę „bold" do jednej funkcji
-- **Priorytet/Rozmiar:** 🔵 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔵 / S · **Status:** ✅ DONE
 - **Problem:** Trzy kopie: `boldPairLetters` (Compose), `NotificationHelper.boldedWord`, `PairWidgetProvider.boldWord`.
 - **Kroki:**
-  - [ ] Jedna funkcja bazowa zwracająca indeksy + adaptery `AnnotatedString` i `Spannable`.
+  - [x] Jedna funkcja bazowa zwracająca indeksy + adaptery `AnnotatedString` i `Spannable`.
 - **Pliki:** `ui/components/PairText.kt`, `notifications/NotificationHelper.kt`, `widget/PairWidgetProvider.kt`
 - **Kryteria akceptacji:** Jedno źródło prawdy dla pogrubiania.
 
 ### REF-2 — Usunąć martwy kod priorytetu powiadomień
-- **Priorytet/Rozmiar:** 🔵 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔵 / S · **Status:** ✅ DONE
 - **Problem:** `setPriority` nieaktywne na `minSdk=26`; sterowanie dźwiękiem robi już `setSilent`.
 - **Kroki:**
-  - [ ] Uprościć `baseBuilder`, usunąć zbędny `setPriority`/komentarze.
+  - [x] Uprościć `baseBuilder`, usunąć zbędny `setPriority`/komentarze.
 - **Pliki:** `notifications/NotificationHelper.kt`
 - **Kryteria akceptacji:** Kod prostszy, zachowanie bez zmian.
 
 ### REF-3 — Wyodrębnić stałe współdzielone
-- **Priorytet/Rozmiar:** 🔵 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔵 / S · **Status:** ✅ DONE
 - **Kroki:**
-  - [ ] Wspólny `NO_COOLDOWN` (scheduler + widget), kolory/rozmiary widgetów jako zasoby.
+  - [x] Wspólny `NO_COOLDOWN` (scheduler + widget), kolory/rozmiary widgetów jako zasoby.
 - **Pliki:** `notifications/*`, `widget/*`, `res/values/*`
 - **Kryteria akceptacji:** Brak zduplikowanych stałych.
 
 ### REF-4 — Jeden helper odmiany liczb (dzień/dni, para/pary/par)
-- **Priorytet/Rozmiar:** 🔵 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔵 / S · **Status:** ✅ DONE
 - **Kroki:**
-  - [ ] Wydzielić `plural()` i użyć w Stats, widgetach, Snackbarze „Cofnij".
+  - [x] Wydzielić `plural()` i użyć w Stats, widgetach, Snackbarze „Cofnij".
 - **Pliki:** `ui/util/…`, miejsca użycia
 - **Kryteria akceptacji:** Jedna implementacja odmiany.
 
 ### REF-5 — Aktualizacja dokumentacji po zmianach
-- **Priorytet/Rozmiar:** 🔵 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔵 / S · **Status:** ✅ DONE
 - **Kroki:**
-  - [ ] Zaktualizować `docs/` i `CLAUDE.md` (sekcja komend budowania/testów, decyzje bezpieczeństwa).
+  - [x] Zaktualizować `docs/` i `CLAUDE.md` (sekcja komend budowania/testów, decyzje bezpieczeństwa).
 - **Pliki:** `docs/*`, `CLAUDE.md`
 - **Kryteria akceptacji:** Docs zgodne z kodem.
 

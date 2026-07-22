@@ -20,7 +20,7 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 | M1 | Bezpieczeństwo i integralność danych | SEC-1…SEC-5 | 🔴 ✅ **DONE** |
 | M2 | Stabilność i odporność | STA-1…STA-6 | 🟠 |
 | M3 | Wydajność i skalowanie | PERF-1…PERF-4 | 🟡 |
-| M4 | Testy i jakość | TEST-1…TEST-6 | 🟠 |
+| M4 | Testy i jakość | TEST-1…TEST-6 | 🟠 ◐ (TEST-1/3/4/5 ✅; TEST-2/6 TODO) |
 | M5 | Refaktor i porządki | REF-1…REF-5 | 🔵 |
 | M6 | UX i drobne | UX-1…UX-3 | 🔵 |
 
@@ -178,9 +178,9 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 ## M4 — Testy i jakość 🟠
 
 ### TEST-1 — Testy `SchedulerRules` (godziny ciszy)
-- **Priorytet/Rozmiar:** 🟠 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🟠 / S · **Status:** ✅ DONE
 - **Kroki:**
-  - [ ] Okno przez północ (22:00–07:00), okno w ciągu dnia, `start==end`, brzegi (dokładnie start/end).
+  - [x] Okno przez północ (22:00–07:00), okno w ciągu dnia, `start==end`, brzegi (dokładnie start/end).
 - **Pliki:** `test/.../SchedulerRulesTest.kt`
 - **Kryteria akceptacji:** Pokrycie wszystkich gałęzi `isWithinQuietHours`.
 
@@ -193,25 +193,25 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 - **Kryteria akceptacji:** Logika serii pokryta testami, niezależna od DataStore.
 
 ### TEST-3 — Testy pogrubiania (`pairLetterIndices`)
-- **Priorytet/Rozmiar:** 🟡 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🟡 / S · **Status:** ✅ DONE
 - **Kroki:**
-  - [ ] Duplikaty liter, wielkość liter, brak dopasowania, puste słowo, litery poza kolejnością.
+  - [x] Duplikaty liter, wielkość liter, brak dopasowania, puste słowo, litery poza kolejnością.
 - **Pliki:** `test/.../PairTextTest.kt`
 - **Kryteria akceptacji:** Wszystkie przypadki brzegowe zielone.
 
 ### TEST-4 — Testy `SelectionEngine` (uzupełnienie)
-- **Priorytet/Rozmiar:** 🟡 / M · **Status:** TODO
+- **Priorytet/Rozmiar:** 🟡 / M · **Status:** ✅ DONE
 - **Kroki:**
-  - [ ] Cooldown zeruje pulę → `pickNext` null; fallback bez cooldownu zwraca parę.
-  - [ ] `exclude` opróżnia pulę → ponów bez `exclude`.
-  - [ ] Wagi (level/recency/hardFlag) wpływają na rozkład (test z ustalonym `Random`).
+  - [x] Cooldown zeruje pulę → `pickNext` null; fallback bez cooldownu zwraca parę.
+  - [x] `exclude` opróżnia pulę → ponów bez `exclude`.
+  - [x] Wagi (level/recency/hardFlag) wpływają na rozkład (test z ustalonym `Random`).
 - **Pliki:** `test/.../SelectionEngineTest.kt`
 - **Kryteria akceptacji:** Deterministyczne testy z wstrzykniętym `Random`.
 
 ### TEST-5 — Testy parsera CSV
-- **Priorytet/Rozmiar:** 🟡 / S · **Status:** TODO
+- **Priorytet/Rozmiar:** 🟡 / S · **Status:** ✅ DONE
 - **Kroki:**
-  - [ ] Separator `,` i `;`, cudzysłowy, podwójne cudzysłowy, nagłówek, puste pola.
+  - [x] Separator `,` i `;`, cudzysłowy, podwójne cudzysłowy, nagłówek, puste pola.
 - **Pliki:** `test/.../CsvParseTest.kt` (może wymagać wydzielenia parsera do testowalnej funkcji)
 - **Kryteria akceptacji:** Parser pokryty; edge case'y zielone.
 

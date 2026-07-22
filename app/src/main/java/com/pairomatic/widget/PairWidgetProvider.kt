@@ -15,7 +15,7 @@ import com.pairomatic.R
 import com.pairomatic.data.db.PairEntity
 import com.pairomatic.domain.SelectionConfig
 import com.pairomatic.domain.SelectionEngine
-import com.pairomatic.ui.components.pairLetterIndices
+import com.pairomatic.domain.pairLetterIndices
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

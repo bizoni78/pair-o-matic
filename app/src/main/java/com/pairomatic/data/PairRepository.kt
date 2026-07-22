@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.room.withTransaction
 import com.pairomatic.data.db.AppDatabase
 import com.pairomatic.data.db.PairEntity
+import com.pairomatic.domain.CsvParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -267,7 +268,7 @@ class PairRepository(
                 }
             }
             csvContent != null -> {
-                val rows = parseCsv(csvContent).take(MAX_PAIRS)
+                val rows = CsvParser.parse(csvContent).take(MAX_PAIRS)
                 if (rows.isNotEmpty()) {
                     database.withTransaction {
                         if (replaceAll) dao.deleteAll()
@@ -289,7 +290,7 @@ class PairRepository(
     suspend fun importFromCsv(source: Uri, replaceAll: Boolean) = withContext(Dispatchers.IO) {
         val text = appContext.contentResolver.openInputStream(source)?.use { readLimited(it, MAX_META_BYTES) }
             ?: return@withContext
-        val rows = parseCsv(text).take(MAX_PAIRS)
+        val rows = CsvParser.parse(text).take(MAX_PAIRS)
         if (rows.isEmpty()) return@withContext
         database.withTransaction {
             if (replaceAll) dao.deleteAll()
@@ -323,42 +324,6 @@ class PairRepository(
                 )
             }
         }
-    }
-
-    /** Dzieli tekst CSV na wiersze i kolumny (świadomy cudzysłowów, separator , lub ;). */
-    private fun parseCsv(text: String): List<List<String>> {
-        val delimiter = if (text.count { it == ';' } > text.count { it == ',' }) ';' else ','
-        val result = mutableListOf<List<String>>()
-        for (raw in text.split("\n")) {
-            val line = raw.trimEnd('\r')
-            if (line.isBlank()) continue
-            result.add(splitCsvLine(line, delimiter))
-        }
-        return result
-    }
-
-    private fun splitCsvLine(line: String, delimiter: Char): List<String> {
-        val fields = mutableListOf<String>()
-        val sb = StringBuilder()
-        var inQuotes = false
-        var i = 0
-        while (i < line.length) {
-            val c = line[i]
-            when {
-                c == '"' -> {
-                    if (inQuotes && i + 1 < line.length && line[i + 1] == '"') {
-                        sb.append('"'); i++
-                    } else {
-                        inQuotes = !inQuotes
-                    }
-                }
-                c == delimiter && !inQuotes -> { fields.add(sb.toString()); sb.setLength(0) }
-                else -> sb.append(c)
-            }
-            i++
-        }
-        fields.add(sb.toString())
-        return fields
     }
 
     // ---------------------------------------------------------------------------------------------

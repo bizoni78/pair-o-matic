@@ -16,7 +16,7 @@ import androidx.core.app.NotificationManagerCompat
 import com.pairomatic.R
 import com.pairomatic.data.db.PairEntity
 import com.pairomatic.data.settings.NotificationImportance
-import com.pairomatic.ui.components.pairLetterIndices
+import com.pairomatic.domain.pairLetterIndices
 import java.io.File
 
 /**

@@ -33,6 +33,9 @@ object NotificationHelper {
     const val EXTRA_PAIR_ID = "extra_pair_id"
     const val EXTRA_GRADE = "extra_grade"
 
+    // Docelowa maks. krawędź obrazka w powiadomieniu (downsampling — ochrona przed OOM).
+    private const val MAX_IMAGE_EDGE_PX = 1024
+
     fun createChannel(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
         val channel = NotificationChannel(
@@ -175,7 +178,23 @@ object NotificationHelper {
         if (fileName.isNullOrBlank()) return null
         val file = File(imageDir, fileName)
         if (!file.exists()) return null
-        return BitmapFactory.decodeFile(file.absolutePath)
+        return decodeSampledBitmap(file.absolutePath, MAX_IMAGE_EDGE_PX)
+    }
+
+    /**
+     * Dekoduje obrazek z próbkowaniem (inSampleSize), żeby duże zdjęcia (np. z aparatu)
+     * nie tworzyły ogromnych bitmap → ochrona przed OOM i limitem rozmiaru powiadomienia.
+     */
+    private fun decodeSampledBitmap(path: String, maxEdgePx: Int): Bitmap? {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(path, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+        var sample = 1
+        while (bounds.outWidth / sample > maxEdgePx || bounds.outHeight / sample > maxEdgePx) {
+            sample *= 2
+        }
+        val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+        return BitmapFactory.decodeFile(path, opts)
     }
 
     private fun gradeIntent(context: Context, pairId: Long, grade: Int): PendingIntent {

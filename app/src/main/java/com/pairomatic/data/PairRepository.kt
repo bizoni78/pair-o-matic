@@ -127,8 +127,10 @@ class PairRepository(
             ?.substringAfterLast('/')
             ?.takeIf { it.isNotBlank() } ?: "img"
         val fileName = "${UUID.randomUUID()}.$ext"
-        appContext.contentResolver.openInputStream(uri)!!.use { input ->
-            File(imagesDir, fileName).outputStream().use { output -> input.copyTo(output) }
+        val input = appContext.contentResolver.openInputStream(uri)
+            ?: error("Nie udało się odczytać obrazka")
+        input.use { stream ->
+            File(imagesDir, fileName).outputStream().use { output -> stream.copyTo(output) }
         }
         fileName
     }
@@ -143,7 +145,9 @@ class PairRepository(
      */
     suspend fun exportToZip(target: Uri, includeStats: Boolean) = withContext(Dispatchers.IO) {
         val pairs = dao.getAll()
-        appContext.contentResolver.openOutputStream(target)!!.use { raw ->
+        val output = appContext.contentResolver.openOutputStream(target)
+            ?: error("Nie udało się otworzyć pliku docelowego")
+        output.use { raw ->
             ZipOutputStream(raw).use { zip ->
                 val json = JSONArray()
                 for (p in pairs) {
@@ -181,7 +185,9 @@ class PairRepository(
      */
     suspend fun exportToCsv(target: Uri) = withContext(Dispatchers.IO) {
         val pairs = dao.getAll()
-        appContext.contentResolver.openOutputStream(target)!!.use { raw ->
+        val output = appContext.contentResolver.openOutputStream(target)
+            ?: error("Nie udało się otworzyć pliku docelowego")
+        output.use { raw ->
             raw.bufferedWriter(Charsets.UTF_8).use { w ->
                 w.append("litery,slowo,obrazek\n")
                 for (p in pairs) {

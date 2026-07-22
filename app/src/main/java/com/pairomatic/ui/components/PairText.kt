@@ -5,10 +5,12 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import com.pairomatic.domain.pairLetterIndices
 
 /**
  * Zwraca słowo z pogrubionymi literami pary. Dla każdej litery pary (po kolei) pogrubia jej
  * pierwsze wystąpienie w słowie, bez nakładania się (np. `CT` + „Cytryna" → **C**y**t**ryna).
+ * Logika indeksów jest w [pairLetterIndices] (czysta, przetestowana jednostkowo).
  */
 fun boldPairLetters(word: String, letters: String): AnnotatedString {
     val boldIndices = pairLetterIndices(word, letters)
@@ -21,19 +23,4 @@ fun boldPairLetters(word: String, letters: String): AnnotatedString {
             }
         }
     }
-}
-
-/** Indeksy w słowie, które odpowiadają kolejnym literom pary (pierwsze wystąpienia, bez nakładania). */
-fun pairLetterIndices(word: String, letters: String): Set<Int> {
-    if (word.isEmpty() || letters.isEmpty()) return emptySet()
-    val result = LinkedHashSet<Int>()
-    var from = 0
-    for (ch in letters) {
-        val idx = word.indexOf(ch, startIndex = from, ignoreCase = true)
-        if (idx >= 0) {
-            result.add(idx)
-            from = idx + 1
-        }
-    }
-    return result
 }

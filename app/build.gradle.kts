@@ -95,4 +95,6 @@ dependencies {
     // Unit tests
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // Prawdziwe org.json na classpath testów JVM (android.jar dostarcza tylko stuby rzucające wyjątek).
+    testImplementation("org.json:json:20240303")
 }

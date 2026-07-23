@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.pairomatic.domain.ProgressLogic
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
@@ -142,16 +143,16 @@ class SettingsRepository(context: Context) {
 
     val progress: Flow<ProgressStats> = store.data.map { p ->
         val today = LocalDate.now().toEpochDay()
-        val streakLastDay = p[Keys.STREAK_LAST_DAY]
-        val streakStored = p[Keys.STREAK_COUNT] ?: 0
-        // Serię pokazujemy tylko, jeśli aktywność była dziś lub wczoraj; inaczej jest przerwana.
-        val streak = when {
-            streakLastDay == null -> 0
-            streakLastDay == today || streakLastDay == today - 1 -> streakStored
-            else -> 0
-        }
-        val todayDay = p[Keys.TODAY_DAY]
-        val todayCount = if (todayDay == today) (p[Keys.TODAY_COUNT] ?: 0) else 0
+        val streak = ProgressLogic.visibleStreak(
+            streakCount = p[Keys.STREAK_COUNT] ?: 0,
+            lastDay = p[Keys.STREAK_LAST_DAY],
+            today = today
+        )
+        val todayCount = ProgressLogic.todayCount(
+            storedCount = p[Keys.TODAY_COUNT] ?: 0,
+            todayDay = p[Keys.TODAY_DAY],
+            today = today
+        )
         val goal = p[Keys.DAILY_GOAL] ?: 20
         val backupDay = p[Keys.BACKUP_LAST_DAY]
         val daysSince = backupDay?.let { (today - it).toInt() }
@@ -167,18 +168,18 @@ class SettingsRepository(context: Context) {
     /** Rejestruje jedną ocenę: aktualizuje serię dni i licznik „dziś". */
     suspend fun recordGrade() = store.edit { p ->
         val today = LocalDate.now().toEpochDay()
-        val lastDay = p[Keys.STREAK_LAST_DAY]
-        val streak = p[Keys.STREAK_COUNT] ?: 0
-        p[Keys.STREAK_COUNT] = when {
-            lastDay == null -> 1
-            lastDay == today -> streak.coerceAtLeast(1)  // już liczone dziś
-            lastDay == today - 1 -> streak + 1           // kolejny dzień z rzędu
-            else -> 1                                    // przerwa — reset
-        }
+        val next = ProgressLogic.recordGrade(
+            ProgressLogic.StreakState(
+                streakCount = p[Keys.STREAK_COUNT] ?: 0,
+                lastDay = p[Keys.STREAK_LAST_DAY],
+                todayCount = p[Keys.TODAY_COUNT] ?: 0,
+                todayDay = p[Keys.TODAY_DAY]
+            ),
+            today
+        )
+        p[Keys.STREAK_COUNT] = next.streakCount
         p[Keys.STREAK_LAST_DAY] = today
-        val todayDay = p[Keys.TODAY_DAY]
-        val curCount = if (todayDay == today) (p[Keys.TODAY_COUNT] ?: 0) else 0
-        p[Keys.TODAY_COUNT] = curCount + 1
+        p[Keys.TODAY_COUNT] = next.todayCount
         p[Keys.TODAY_DAY] = today
     }
 

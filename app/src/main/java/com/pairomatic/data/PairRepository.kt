@@ -8,11 +8,10 @@ import androidx.room.withTransaction
 import com.pairomatic.data.db.AppDatabase
 import com.pairomatic.data.db.PairEntity
 import com.pairomatic.domain.CsvParser
+import com.pairomatic.domain.DeckJson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
@@ -221,22 +220,9 @@ class PairRepository(
             ?: error("Nie udało się otworzyć pliku docelowego")
         output.use { raw ->
             ZipOutputStream(raw).use { zip ->
-                val json = JSONArray()
-                for (p in pairs) {
-                    val obj = JSONObject()
-                        .put("letters", p.letters)
-                        .put("word", p.word)
-                        .put("image", p.imagePath ?: JSONObject.NULL)
-                    if (includeStats) {
-                        obj.put("level", p.level ?: JSONObject.NULL)
-                        obj.put("lastSeen", p.lastSeen ?: JSONObject.NULL)
-                        obj.put("hardFlag", p.hardFlag)
-                        obj.put("reviewFlag", p.reviewFlag)
-                    }
-                    json.put(obj)
-                }
+                val json = DeckJson.encode(pairs.map { it.toDeckPair() }, includeStats)
                 zip.putNextEntry(ZipEntry("pairs.json"))
-                zip.write(json.toString(2).toByteArray())
+                zip.write(json.toByteArray())
                 zip.closeEntry()
 
                 for (p in pairs) {
@@ -270,6 +256,28 @@ class PairRepository(
             }
         }
     }
+
+    /** Mapowanie encji Room → neutralna reprezentacja do serializacji. */
+    private fun PairEntity.toDeckPair() = DeckJson.DeckPair(
+        letters = letters,
+        word = word,
+        imagePath = imagePath,
+        level = level,
+        lastSeen = lastSeen,
+        hardFlag = hardFlag,
+        reviewFlag = reviewFlag
+    )
+
+    /** Mapowanie zdeserializowanej pary → encja Room (nowy wiersz; id nadaje baza). */
+    private fun DeckJson.DeckPair.toEntity() = PairEntity(
+        letters = letters,
+        word = word,
+        imagePath = imagePath,
+        level = level,
+        lastSeen = lastSeen,
+        hardFlag = hardFlag,
+        reviewFlag = reviewFlag
+    )
 
     private fun csvField(value: String): String =
         if (value.contains(',') || value.contains('"') || value.contains('\n') || value.contains('\r')) {
@@ -320,22 +328,7 @@ class PairRepository(
         val csvContent = pairsCsv
         when {
             jsonContent != null -> {
-                val array = JSONArray(jsonContent)
-                val incoming = ArrayList<PairEntity>(minOf(array.length(), MAX_PAIRS))
-                for (i in 0 until minOf(array.length(), MAX_PAIRS)) {
-                    val obj = array.getJSONObject(i)
-                    incoming.add(
-                        PairEntity(
-                            letters = obj.getString("letters"),
-                            word = obj.optString("word", ""),
-                            imagePath = obj.optString("image", null)?.takeIf { it.isNotBlank() && it != "null" },
-                            level = if (obj.isNull("level")) null else obj.optInt("level"),
-                            lastSeen = if (obj.isNull("lastSeen")) null else obj.optLong("lastSeen"),
-                            hardFlag = obj.optBoolean("hardFlag", false),
-                            reviewFlag = obj.optBoolean("reviewFlag", false)
-                        )
-                    )
-                }
+                val incoming = DeckJson.decode(jsonContent, MAX_PAIRS).map { it.toEntity() }
                 database.withTransaction {
                     if (replaceAll) dao.deleteAll()
                     for (inc in incoming) {

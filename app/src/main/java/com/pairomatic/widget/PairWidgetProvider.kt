@@ -31,7 +31,8 @@ class PairWidgetProvider : AppWidgetProvider() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val repo = (context.applicationContext as PairOMaticApp).container.pairRepository
-                val pairs = repo.getAllPairs()
+                // PERF-1: cache listy — seria szybkich tapnięć nie odpytuje bazy za każdym razem.
+                val pairs = repo.getAllPairsCached()
                 appWidgetIds.forEach { id ->
                     appWidgetManager.updateAppWidget(id, buildViews(context, pairs, id))
                 }

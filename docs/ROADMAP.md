@@ -20,7 +20,7 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 | M1 | Bezpieczeństwo i integralność danych | SEC-1…SEC-5 | 🔴 ✅ **DONE** |
 | M2 | Stabilność i odporność | STA-1…STA-6 | 🟠 ✅ **DONE** |
 | M3 | Wydajność i skalowanie | PERF-1…PERF-4 | 🟡 ◐ (PERF-3/4 ✅; PERF-1/2 TODO) |
-| M4 | Testy i jakość | TEST-1…TEST-6 | 🟠 ◐ (TEST-1/3/4/5 ✅; TEST-2/6 TODO) |
+| M4 | Testy i jakość | TEST-1…TEST-6 | 🟠 ✅ **DONE** |
 | M5 | Refaktor i porządki | REF-1…REF-5 | 🔵 ✅ **DONE** |
 | M6 | UX i drobne | UX-1…UX-3 | 🔵 ✅ **DONE** |
 
@@ -185,10 +185,10 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 - **Kryteria akceptacji:** Pokrycie wszystkich gałęzi `isWithinQuietHours`.
 
 ### TEST-2 — Testy serii/celu (`ProgressStats`)
-- **Priorytet/Rozmiar:** 🟠 / M · **Status:** TODO
+- **Priorytet/Rozmiar:** 🟠 / M · **Status:** ✅ DONE
 - **Kroki:**
-  - [ ] Wydzielić czystą logikę serii z `SettingsRepository.recordGrade` (funkcja bez DataStore) do przetestowania.
-  - [ ] Testy: pierwszy dzień, kolejny dzień (streak+1), przerwa (reset), dwie oceny tego samego dnia, rollover licznika „dziś".
+  - [x] Wydzielić czystą logikę serii z `SettingsRepository.recordGrade` (funkcja bez DataStore) do przetestowania. → `domain/ProgressLogic`
+  - [x] Testy: pierwszy dzień, kolejny dzień (streak+1), przerwa (reset), dwie oceny tego samego dnia, rollover licznika „dziś".
 - **Pliki:** `domain/…` (nowy helper), `test/…`
 - **Kryteria akceptacji:** Logika serii pokryta testami, niezależna od DataStore.
 
@@ -216,9 +216,9 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 - **Kryteria akceptacji:** Parser pokryty; edge case'y zielone.
 
 ### TEST-6 — Test round-trip eksport→import
-- **Priorytet/Rozmiar:** 🔵 / M · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔵 / M · **Status:** ✅ DONE
 - **Kroki:**
-  - [ ] Test (instrumentalny lub z fake `ContentResolver`) — eksport ZIP i ponowny import odtwarza pary i statystyki.
+  - [x] Wydzielić czyste (de)kodowanie talii → `domain/DeckJson`; round-trip eksport→import odtwarza pary i statystyki (test JVM z realnym org.json).
 - **Pliki:** `androidTest/…` lub `test/…` z abstrakcją IO
 - **Kryteria akceptacji:** Dane po round-trip identyczne.
 

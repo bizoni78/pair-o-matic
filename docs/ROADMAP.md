@@ -18,7 +18,7 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 | Kamień | Zakres | Zadania | Priorytet |
 |---|---|---|---|
 | M1 | Bezpieczeństwo i integralność danych | SEC-1…SEC-5 | 🔴 ✅ **DONE** |
-| M2 | Stabilność i odporność | STA-1…STA-6 | 🟠 ◐ (STA-1/3/4/5/6 ✅; STA-2 TODO) |
+| M2 | Stabilność i odporność | STA-1…STA-6 | 🟠 ✅ **DONE** |
 | M3 | Wydajność i skalowanie | PERF-1…PERF-4 | 🟡 ◐ (PERF-3/4 ✅; PERF-1/2 TODO) |
 | M4 | Testy i jakość | TEST-1…TEST-6 | 🟠 ◐ (TEST-1/3/4/5 ✅; TEST-2/6 TODO) |
 | M5 | Refaktor i porządki | REF-1…REF-5 | 🔵 ✅ **DONE** |
@@ -95,11 +95,11 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 - **Kryteria akceptacji:** Duży obrazek wyświetla się w powiadomieniu bez OOM; zużycie pamięci ograniczone.
 
 ### STA-2 — Normalizacja obrazka przy imporcie do pamięci aplikacji
-- **Priorytet/Rozmiar:** 🟡 / M · **Status:** TODO
+- **Priorytet/Rozmiar:** 🟡 / M · **Status:** ✅ DONE
 - **Problem:** `copyImageFromUri` kopiuje 1:1 — bardzo duże pliki puchną w pamięci wewnętrznej.
 - **Kroki:**
-  - [ ] Opcjonalnie przeskalować/re-enkodować obrazek do rozsądnego maksimum przy kopiowaniu.
-  - [ ] Zachować proporcje; limit krawędzi ~1600 px.
+  - [x] Opcjonalnie przeskalować/re-enkodować obrazek do rozsądnego maksimum przy kopiowaniu.
+  - [x] Zachować proporcje; limit krawędzi ~1600 px.
 - **Pliki:** `data/PairRepository.kt`
 - **Kryteria akceptacji:** Duże zdjęcie zapisuje się jako rozsądnej wielkości plik.
 

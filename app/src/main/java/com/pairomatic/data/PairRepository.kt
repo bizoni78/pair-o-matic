@@ -9,6 +9,8 @@ import com.pairomatic.data.db.AppDatabase
 import com.pairomatic.data.db.PairEntity
 import com.pairomatic.domain.CsvParser
 import com.pairomatic.domain.DeckJson
+import com.pairomatic.domain.SelectionConfig
+import com.pairomatic.domain.WeightedPicker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -43,45 +45,114 @@ class PairRepository(
 
     val imagesDirectory: File get() = imagesDir
 
+    // -----------------------------------------------------------------------------------------
+    // PERF-1: krótkotrwały cache pełnej listy par + PERF-2: dobór ważony liczony w SQL
+    // -----------------------------------------------------------------------------------------
+
+    @Volatile private var cachedPairs: List<PairEntity>? = null
+    @Volatile private var cachedAtMillis: Long = 0L
+
+    /**
+     * PERF-1: pełna lista par z krótkim cache — seria akcji (np. szybkie odświeżenia widgetu
+     * czy fallback doboru) nie odpytuje bazy za każdym razem. Każdy zapis unieważnia cache
+     * ([invalidatePairsCache]), więc dobór nie działa na nieaktualnych danych.
+     */
+    suspend fun getAllPairsCached(ttlMillis: Long = PAIRS_CACHE_TTL_MS): List<PairEntity> =
+        withContext(Dispatchers.IO) {
+            val snapshot = cachedPairs
+            if (snapshot != null && System.currentTimeMillis() - cachedAtMillis < ttlMillis) {
+                snapshot
+            } else {
+                dao.getAll().also {
+                    cachedPairs = it
+                    cachedAtMillis = System.currentTimeMillis()
+                }
+            }
+        }
+
+    /** Unieważnia cache listy par (wołane po każdym zapisie do tabeli `pairs`). */
+    private fun invalidatePairsCache() {
+        cachedPairs = null
+    }
+
+    /**
+     * PERF-2: dobiera `id` kolejnej pary losowaniem ważonym z wagami policzonymi po stronie SQL
+     * (bez ładowania całej tabeli encji). Zwraca null, gdy brak kandydatów (np. wszystko w cooldownie
+     * albo wykluczone). Rozkład jest identyczny jak w [com.pairomatic.domain.SelectionEngine].
+     *
+     * @param exclude „ostatnio pokazane" do pominięcia (mała lista — filtrowana w pamięci)
+     */
+    suspend fun pickNextIdWeighted(
+        now: Long,
+        config: SelectionConfig,
+        exclude: Set<Long>
+    ): Long? = withContext(Dispatchers.IO) {
+        val candidates = dao.selectionCandidates(
+            now = now,
+            cooldownMillis = config.cooldownMillis,
+            wNull = config.levelWeight(null),
+            w0 = config.levelWeight(0),
+            w1 = config.levelWeight(1),
+            w2 = config.levelWeight(2),
+            capHours = config.recencyCapHours,
+            hardBoost = config.hardFlagBoost,
+            newLimit = config.newPairLimit ?: Int.MAX_VALUE
+        ).let { if (exclude.isEmpty()) it else it.filter { c -> c.id !in exclude } }
+        WeightedPicker.pick(candidates)
+    }
+
     suspend fun upsert(pair: PairEntity): Long = withContext(Dispatchers.IO) {
-        if (pair.id == 0L) dao.insert(pair) else {
+        val result = if (pair.id == 0L) dao.insert(pair) else {
             dao.update(pair)
             pair.id
         }
+        invalidatePairsCache()
+        result
     }
 
     suspend fun delete(pair: PairEntity) = withContext(Dispatchers.IO) {
         pair.imagePath?.let { File(imagesDir, it).delete() }
         dao.delete(pair)
+        invalidatePairsCache()
     }
 
     suspend fun grade(id: Long, level: Int, lastSeen: Long) = withContext(Dispatchers.IO) {
         dao.grade(id, level, lastSeen)
+        invalidatePairsCache()
     }
 
     /** Ustawia/zdejmuje flagę „słowo do zmiany" dla danej pary. */
     suspend fun setReviewFlag(id: Long, flag: Boolean) = withContext(Dispatchers.IO) {
         dao.setReviewFlag(id, flag)
+        invalidatePairsCache()
     }
 
     /** Ustawia/zdejmuje flagę „nie wchodzi do głowy" dla danej pary. */
     suspend fun setHardFlag(id: Long, flag: Boolean) = withContext(Dispatchers.IO) {
         dao.setHardFlag(id, flag)
+        invalidatePairsCache()
     }
 
     /** Szybka edycja samego słowa danej pary. */
     suspend fun updateWord(id: Long, word: String) = withContext(Dispatchers.IO) {
         dao.updateWord(id, word)
+        invalidatePairsCache()
     }
 
     /** Masowo ustawia flagę „słowo do zmiany" dla wielu par. */
     suspend fun setReviewFlagMany(ids: List<Long>, flag: Boolean) = withContext(Dispatchers.IO) {
-        if (ids.isNotEmpty()) dao.setReviewFlagMany(ids, flag)
+        if (ids.isNotEmpty()) {
+            dao.setReviewFlagMany(ids, flag)
+            invalidatePairsCache()
+        }
     }
 
     /** Masowo ustawia flagę „nie wchodzi do głowy" dla wielu par. */
     suspend fun setHardFlagMany(ids: List<Long>, flag: Boolean) = withContext(Dispatchers.IO) {
-        if (ids.isNotEmpty()) dao.setHardFlagMany(ids, flag)
+        if (ids.isNotEmpty()) {
+            dao.setHardFlagMany(ids, flag)
+            invalidatePairsCache()
+        }
     }
 
     /** Masowo usuwa pary wraz z ich plikami obrazków. */
@@ -89,6 +160,7 @@ class PairRepository(
         if (pairs.isEmpty()) return@withContext
         pairs.forEach { p -> p.imagePath?.let { File(imagesDir, it).delete() } }
         dao.deleteByIds(pairs.map { it.id })
+        invalidatePairsCache()
     }
 
     /**
@@ -96,12 +168,16 @@ class PairRepository(
      * Osierocone pliki można potem posprzątać przez [deleteOrphanImages].
      */
     suspend fun deleteRowsOnly(pairs: List<PairEntity>) = withContext(Dispatchers.IO) {
-        if (pairs.isNotEmpty()) dao.deleteByIds(pairs.map { it.id })
+        if (pairs.isNotEmpty()) {
+            dao.deleteByIds(pairs.map { it.id })
+            invalidatePairsCache()
+        }
     }
 
     /** Przywraca wcześniej usunięte pary (z zachowaniem id i ścieżek obrazków). */
     suspend fun restorePairs(pairs: List<PairEntity>) = withContext(Dispatchers.IO) {
         pairs.forEach { runCatching { dao.insert(it) } }
+        invalidatePairsCache()
     }
 
     /** Liczy pliki obrazków w pamięci, do których nie odwołuje się żadna para. */
@@ -348,6 +424,7 @@ class PairRepository(
                 }
             }
         }
+        invalidatePairsCache()
     }
 
     /**
@@ -367,6 +444,7 @@ class PairRepository(
             if (replaceAll) dao.deleteAll()
             upsertCsvRows(rows)
         }
+        invalidatePairsCache()
     }
 
     /**
@@ -448,6 +526,7 @@ class PairRepository(
         private const val MAX_IMAGE_BYTES = 15L * 1024 * 1024    // 15 MB na obrazek
         private const val MAX_IMAGE_EDGE_PX = 1600               // STA-2: limit dłuższej krawędzi
         private const val JPEG_QUALITY = 90                      // jakość re-enkodowania (JPEG/WEBP)
+        private const val PAIRS_CACHE_TTL_MS = 3_000L            // PERF-1: TTL cache listy par
         private val ALLOWED_IMAGE_EXT = setOf("png", "jpg", "jpeg", "webp")
     }
 }

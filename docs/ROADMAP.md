@@ -19,7 +19,7 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 |---|---|---|---|
 | M1 | Bezpieczeństwo i integralność danych | SEC-1…SEC-5 | 🔴 ✅ **DONE** |
 | M2 | Stabilność i odporność | STA-1…STA-6 | 🟠 ✅ **DONE** |
-| M3 | Wydajność i skalowanie | PERF-1…PERF-4 | 🟡 ◐ (PERF-3/4 ✅; PERF-1/2 TODO) |
+| M3 | Wydajność i skalowanie | PERF-1…PERF-4 | 🟡 ✅ **DONE** |
 | M4 | Testy i jakość | TEST-1…TEST-6 | 🟠 ✅ **DONE** |
 | M5 | Refaktor i porządki | REF-1…REF-5 | 🔵 ✅ **DONE** |
 | M6 | UX i drobne | UX-1…UX-3 | 🔵 ✅ **DONE** |
@@ -140,19 +140,19 @@ pogrupowane w kamienie milowe. Każde zadanie ma być realizowane jako **osobny,
 ## M3 — Wydajność i skalowanie 🟡
 
 ### PERF-1 — Ograniczyć pełny `getAllPairs()` na każde zdarzenie
-- **Priorytet/Rozmiar:** 🟡 / M · **Status:** TODO
+- **Priorytet/Rozmiar:** 🟡 / M · **Status:** ✅ DONE
 - **Problem:** Każde powiadomienie/tap widgetu ładuje wszystkie 400+ par do pamięci.
 - **Kroki:**
-  - [ ] Rozważyć krótkotrwały cache listy w schedulerze/widgetach (z inwalidacją przy zmianach).
-  - [ ] Zmierzyć realny koszt (przy 400 może nie być potrzeby).
+  - [x] Krótkotrwały cache listy w `PairRepository` (`getAllPairsCached`, TTL 3 s) z inwalidacją przy każdym zapisie; używany przez widget i fallback doboru.
+  - [x] Główna ścieżka doboru nie ładuje już całej tabeli (patrz PERF-2).
 - **Pliki:** `notifications/NotificationScheduler.kt`, `widget/*`
 - **Kryteria akceptacji:** Mniej pełnych odczytów bazy przy serii akcji; brak regresji doboru.
 
 ### PERF-2 — Losowanie ważone po stronie SQL (opcjonalne)
-- **Priorytet/Rozmiar:** 🔵 / L · **Status:** TODO
+- **Priorytet/Rozmiar:** 🔵 / L · **Status:** ✅ DONE
 - **Problem:** Cała pula ładowana do pamięci przy każdym doborze.
 - **Kroki:**
-  - [ ] Zaprojektować zapytanie doboru (np. losowanie ważone z wagami liczonymi w SQL) — zachować `SelectionEngine` jako fallback/testowalną referencję.
+  - [x] `PairDao.selectionCandidates` liczy wagi (poziom × świeżość × flaga) w SQL i zwraca lekkie `id+waga` (pomija cooldown i nadmiar nowych par). Losowy wybór proporcjonalny w czystym `WeightedPicker` (test rozkładu). `SelectionEngine` zostaje jako fallback/testowalna referencja na pełnej liście.
 - **Pliki:** `data/db/PairDao.kt`, `domain/SelectionEngine.kt`
 - **Kryteria akceptacji:** Dobór działa bez ładowania całej tabeli; testy potwierdzają rozkład.
 

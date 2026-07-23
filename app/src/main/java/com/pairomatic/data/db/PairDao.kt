@@ -35,6 +35,44 @@ interface PairDao {
     @Query("SELECT * FROM pairs")
     suspend fun getAll(): List<PairEntity>
 
+    /**
+     * PERF-2: kandydaci do doboru z wagą policzoną w SQL (bez ładowania całej tabeli).
+     * Waga = poziom × świeżość × flaga „trudna" — dokładnie jak w [com.pairomatic.domain.SelectionEngine].
+     * Pomija pary w cooldownie oraz nadmiarowe nowe pary (level IS NULL) ponad `newLimit` (najstarsze po id).
+     * Wykluczenia „ostatnio pokazanych" nakłada warstwa wyżej (mała lista → prościej i taniej w Kotlinie).
+     */
+    @Query(
+        """
+        SELECT id AS id,
+            (CASE
+                WHEN level IS NULL THEN :wNull
+                WHEN level = 0 THEN :w0
+                WHEN level = 1 THEN :w1
+                WHEN level = 2 THEN :w2
+                ELSE :wNull END)
+            * (1.0 + MIN(
+                CASE WHEN lastSeen IS NULL THEN :capHours
+                     ELSE MAX((:now - lastSeen) / 3600000.0, 0.0) END,
+                :capHours))
+            * (CASE WHEN hardFlag = 1 THEN :hardBoost ELSE 1.0 END) AS weight
+        FROM pairs
+        WHERE (lastSeen IS NULL OR (:now - lastSeen) >= :cooldownMillis)
+          AND (level IS NOT NULL
+               OR id IN (SELECT id FROM pairs WHERE level IS NULL ORDER BY id ASC LIMIT :newLimit))
+        """
+    )
+    suspend fun selectionCandidates(
+        now: Long,
+        cooldownMillis: Long,
+        wNull: Double,
+        w0: Double,
+        w1: Double,
+        w2: Double,
+        capHours: Double,
+        hardBoost: Double,
+        newLimit: Int
+    ): List<PairWeight>
+
     @Query("SELECT * FROM pairs WHERE id = :id")
     suspend fun getById(id: Long): PairEntity?
 

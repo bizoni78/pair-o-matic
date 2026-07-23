@@ -42,16 +42,15 @@ class NotificationScheduler(
             NotificationHelper.cancel(context)
             return@withLock
         }
-        val pairs = pairRepository.getAllPairs()
-        if (pairs.isEmpty()) {
-            NotificationHelper.cancel(context)
-            return@withLock
-        }
         // WAŻNE: nigdy nie urywamy łańcucha. Jeśli cooldown wyzeruje całą pulę (mała talia,
         // wszystko świeżo ocenione), dobieramy parę mimo wszystko (bez cooldownu) — inaczej
         // po swipe/ocenie kolejne powiadomienie nie pojawiłoby się aż do wygaśnięcia cooldownu.
         val exclude = excludeId?.let { setOf(it) } ?: emptySet()
-        val next = pickWithFallback(pairs, exclude = exclude)
+        val next = pickWithFallback(exclude = exclude)
+        if (next == null) {
+            NotificationHelper.cancel(context)
+            return@withLock
+        }
         NotificationHelper.showTest(
             context, next, pairRepository.imagesDirectory, settings.importance
         )
@@ -64,12 +63,11 @@ class NotificationScheduler(
             NotificationHelper.cancel(context)
             return@withLock
         }
-        val pairs = pairRepository.getAllPairs()
-        if (pairs.isEmpty()) {
+        val next = pickWithFallback(exclude = recentImmersion.toSet())
+        if (next == null) {
             NotificationHelper.cancel(context)
             return@withLock
         }
-        val next = pickWithFallback(pairs, exclude = recentImmersion.toSet())
         rememberImmersion(next.id)
         NotificationHelper.showImmersion(
             context, next, pairRepository.imagesDirectory, settings.importance
@@ -77,11 +75,25 @@ class NotificationScheduler(
     }
 
     /**
-     * Dobiera parę, gwarantując wynik dla niepustej talii: najpierw normalnie (z cooldownem),
-     * potem — jeśli cała pula jest w cooldownie — bez cooldownu, a w ostateczności losowo.
+     * Dobiera parę bez ładowania całej tabeli (PERF-2): wagi liczy SQL, losowanie robi
+     * [com.pairomatic.domain.WeightedPicker]. Gwarantuje wynik dla niepustej talii — najpierw
+     * z cooldownem, potem bez cooldownu. W ostateczności (albo gdy ścieżka SQL zawiedzie)
+     * spada na pełną listę z cache + [SelectionEngine] jako referencję. Zwraca null dla pustej talii.
      */
-    private fun pickWithFallback(pairs: List<PairEntity>, exclude: Set<Long>): PairEntity {
+    private suspend fun pickWithFallback(exclude: Set<Long>): PairEntity? {
         val now = System.currentTimeMillis()
+
+        pairRepository.pickNextIdWeighted(now, SelectionConfig.DEFAULT, exclude)?.let { id ->
+            pairRepository.getById(id)?.let { return it }
+        }
+        pairRepository.pickNextIdWeighted(now, SelectionConfig.NO_COOLDOWN, exclude)?.let { id ->
+            pairRepository.getById(id)?.let { return it }
+        }
+
+        // Fallback: pełna lista (z cache) + SelectionEngine (referencja). Obsługuje też przypadek,
+        // gdy wykluczenia wyzerowały pulę (pickNext wewnętrznie ponawia bez exclude).
+        val pairs = pairRepository.getAllPairsCached()
+        if (pairs.isEmpty()) return null
         return SelectionEngine.pickNext(pairs, now, SelectionConfig.DEFAULT, exclude)
             ?: SelectionEngine.pickNext(pairs, now, SelectionConfig.NO_COOLDOWN, exclude)
             ?: pairs.random()

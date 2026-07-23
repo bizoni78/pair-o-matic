@@ -1,6 +1,8 @@
 package com.pairomatic.data
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.room.withTransaction
 import com.pairomatic.data.db.AppDatabase
@@ -124,18 +126,85 @@ class PairRepository(
 
     fun imageFile(fileName: String): File = File(imagesDir, fileName)
 
-    /** Kopiuje wskazany obrazek do pamięci wewnętrznej i zwraca jego nazwę pliku. */
+    /**
+     * Kopiuje wskazany obrazek do pamięci wewnętrznej i zwraca jego nazwę pliku.
+     *
+     * STA-2: jeśli obrazek jest większy niż [MAX_IMAGE_EDGE_PX], przy kopiowaniu skaluje go
+     * (z zachowaniem proporcji) i re-enkoduje, żeby duże zdjęcia nie puchły w pamięci aplikacji.
+     * Obrazki mniejsze — lub gdy dekodowanie się nie powiedzie (np. nietypowy format) — kopiowane
+     * są 1:1 bez utraty jakości.
+     */
     suspend fun copyImageFromUri(uri: Uri): String = withContext(Dispatchers.IO) {
-        val ext = appContext.contentResolver.getType(uri)
-            ?.substringAfterLast('/')
-            ?.takeIf { it.isNotBlank() } ?: "img"
+        val mime = appContext.contentResolver.getType(uri)
+        val ext = mime?.substringAfterLast('/')?.takeIf { it.isNotBlank() } ?: "img"
+
+        // Krok 1: odczytaj same wymiary (bez alokacji pikseli), żeby zdecydować czy skalować.
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        appContext.contentResolver.openInputStream(uri)?.use {
+            BitmapFactory.decodeStream(it, null, bounds)
+        }
+        val maxEdge = maxOf(bounds.outWidth, bounds.outHeight)
+
+        // Skalujemy tylko rastrowe obrazki, które faktycznie są za duże.
+        if (bounds.outWidth <= 0 || maxEdge <= MAX_IMAGE_EDGE_PX) {
+            return@withContext copyRaw(uri, ext)
+        }
+
+        val format = when (ext.lowercase()) {
+            "jpg", "jpeg" -> Bitmap.CompressFormat.JPEG
+            "webp" -> Bitmap.CompressFormat.WEBP
+            else -> Bitmap.CompressFormat.PNG   // domyślnie bezstratnie (zachowuje przezroczystość)
+        }
+        // Rozszerzenie pliku zgodne z formatem zapisu (PNG dla nieznanych/rastrowych bez ext).
+        val outExt = when (format) {
+            Bitmap.CompressFormat.JPEG -> "jpg"
+            Bitmap.CompressFormat.WEBP -> "webp"
+            else -> "png"
+        }
+
+        val decodeOpts = BitmapFactory.Options().apply {
+            inSampleSize = computeInSampleSize(maxEdge, MAX_IMAGE_EDGE_PX)
+        }
+        val decoded = appContext.contentResolver.openInputStream(uri)?.use {
+            BitmapFactory.decodeStream(it, null, decodeOpts)
+        } ?: return@withContext copyRaw(uri, ext)   // nie udało się zdekodować → kopia 1:1
+
+        val scaled = scaleToMaxEdge(decoded, MAX_IMAGE_EDGE_PX)
+        val fileName = "${UUID.randomUUID()}.$outExt"
+        File(imagesDir, fileName).outputStream().use { output ->
+            scaled.compress(format, JPEG_QUALITY, output)
+        }
+        if (scaled !== decoded) decoded.recycle()
+        scaled.recycle()
+        fileName
+    }
+
+    /** Kopiuje obrazek bajt w bajt (bez re-enkodowania). */
+    private fun copyRaw(uri: Uri, ext: String): String {
         val fileName = "${UUID.randomUUID()}.$ext"
         val input = appContext.contentResolver.openInputStream(uri)
             ?: error("Nie udało się odczytać obrazka")
         input.use { stream ->
             File(imagesDir, fileName).outputStream().use { output -> stream.copyTo(output) }
         }
-        fileName
+        return fileName
+    }
+
+    /** Największa potęga 2, przy której dłuższa krawędź zejdzie do ~[maxEdge] (dekodowanie zgrubne). */
+    private fun computeInSampleSize(sourceMaxEdge: Int, maxEdge: Int): Int {
+        var sample = 1
+        while (sourceMaxEdge / (sample * 2) >= maxEdge) sample *= 2
+        return sample
+    }
+
+    /** Dokładne doskalowanie (po zgrubnym inSampleSize) do dłuższej krawędzi [maxEdge]. */
+    private fun scaleToMaxEdge(bitmap: Bitmap, maxEdge: Int): Bitmap {
+        val longer = maxOf(bitmap.width, bitmap.height)
+        if (longer <= maxEdge) return bitmap
+        val ratio = maxEdge.toFloat() / longer
+        val w = (bitmap.width * ratio).toInt().coerceAtLeast(1)
+        val h = (bitmap.height * ratio).toInt().coerceAtLeast(1)
+        return Bitmap.createScaledBitmap(bitmap, w, h, true)
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -384,6 +453,8 @@ class PairRepository(
         private const val MAX_PAIRS = 10_000
         private const val MAX_META_BYTES = 8 * 1024 * 1024       // 8 MB (pairs.json / csv)
         private const val MAX_IMAGE_BYTES = 15L * 1024 * 1024    // 15 MB na obrazek
+        private const val MAX_IMAGE_EDGE_PX = 1600               // STA-2: limit dłuższej krawędzi
+        private const val JPEG_QUALITY = 90                      // jakość re-enkodowania (JPEG/WEBP)
         private val ALLOWED_IMAGE_EXT = setOf("png", "jpg", "jpeg", "webp")
     }
 }
